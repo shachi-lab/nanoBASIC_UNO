@@ -18,7 +18,7 @@
 
 For English readers: [README.md](README.md)
 
-![nanoBASIC UNO screenshot](./images/screenshot_1.png) 
+![nanoBASIC UNO screenshot](./images/screenshot_1.png)   
 nanoBASIC UNO の実行例。起動メッセージ（Ver 0.14）に続き、
 単一行での複数文、FOR/NEXT、そして Arduino UNO の内蔵LEDを
 制御するシンプルなブリンクプログラムを実行しています。
