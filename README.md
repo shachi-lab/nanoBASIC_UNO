@@ -14,6 +14,14 @@ It is a modern reconstruction of the original BASIC interpreter written in 2012 
 
 The goal of this project is to provide **a compact, practical BASIC environment for small microcontrollers**, using only minimal memory.
 
+日本語版READMEはこちら → [README_jp.md](README_jp.md)
+
+![nanoBASIC UNO screenshot](./images/screenshot_1.png)
+Example run of nanoBASIC UNO. After the startup banner (Ver 0.14),
+it demonstrates multiple statements on one line, a FOR/NEXT loop,
+and a simple LED blink routine using Arduino UNO’s built-in D13 pin.
+The Ctrl-C break behavior is also shown.
+
 ---
 
 ## ✨ Features

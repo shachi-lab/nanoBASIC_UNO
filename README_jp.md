@@ -16,6 +16,14 @@
 本プロジェクトは、**小型 MCU 上で「現代的に使える BASIC」** を  
 最小限のメモリで実現することを目的としています。
 
+For English readers: [README.md](README.md)
+
+![nanoBASIC UNO screenshot](./images/screenshot_1.png) 
+nanoBASIC UNO の実行例。起動メッセージ（Ver 0.14）に続き、
+単一行での複数文、FOR/NEXT、そして Arduino UNO の内蔵LEDを
+制御するシンプルなブリンクプログラムを実行しています。
+Ctrl-C によるブレーク動作も確認できます。
+
 ---
 
 ## ✨機能
