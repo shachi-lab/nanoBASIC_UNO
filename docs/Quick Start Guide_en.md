@@ -24,7 +24,7 @@ After uploading, open the Serial Monitor (115200 bps).
 You should see:
 
 ```
-nanoBASIC UNO Ver 0.14
+nanoBASIC UNO Ver 0.15
 OK
 ```
 ### **Important**
@@ -34,6 +34,7 @@ If this is not set, commands may not be interpreted correctly.
 ---
 
 ## 3. Try simple commands
+Immediately after starting nanoBASIC UNO, it is in REPL (Interactive) mode
 
 ### Display a string
 ```
@@ -66,26 +67,27 @@ FOR I=0 TO 10:PRINT I*I:NEXT
 
 ## 4. Create your first program (blink the LED)
 
-### Enter program mode
+### Enter program command
 ```
 PROG
 ```
 
 ### Enter the following lines exactly as written:
 ```
-> DO
-> OUTP 13, 1
-> DELAY 500
-> OUTP 13, 0
-> DELAY 500
-> LOOP
-> #
+DO
+OUTP 13, 1
+DELAY 500
+OUTP 13, 0
+DELAY 500
+LOOP
+#
 ```
 `#` ends PROG mode.
 
 ---
 
 ## 5. Run the program
+The `RUN` command enters Run (program execution) mode.
 ```
 RUN
 ```

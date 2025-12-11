@@ -10,12 +10,14 @@
  * function prototypes defined here.
  *
  * This header defines:
- *   - Digital I/O access
+ *   - Character I/O for the console
+ *   - GPIO (digital input/output)
  *   - Analog input (ADC)
  *   - PWM output
  *   - Timing utilities
- *   - Character I/O for the console
  *   - Random number support
+ *   - System reset
+ *   - EEPROM access
  *
  * Porting NanoBASIC to another MCU involves
  * creating a bios_<platform>.cpp/.h pair
@@ -34,18 +36,18 @@
 // Initialize
 void bios_init(void);
 
-//UART
-void bios_SerialInit( void );
-void bios_SerialPutChar( uint8_t ch );
-uint8_t bios_SerialGetChar( void );
+// Character I/O
+void bios_serialInit( void );
+void bios_serialPutChar( char ch );
+int16_t bios_serialGetChar( void );
 
-// SystemTimer
+// Timing utilities
 void bios_systemTimerInit( void );
 void bios_setWaitTick( int16_t val );
 int16_t bios_getWaitTick( void );
 int16_t bios_getSystemTick( void );
 
-// Random
+// Random number
 void bios_randomize( int16_t val );
 int16_t bios_rand( int16_t val );
 
@@ -54,5 +56,13 @@ int16_t bios_writeGpio( int16_t pin, int16_t value );
 int16_t bios_readGpio( int16_t pin );
 int16_t bios_readAdc( int16_t ch );
 int16_t bios_setPwm( int16_t pin, int16_t value );
+
+// System reset
+void bios_systemReset( void );
+
+// EEPROM
+void eepEraseBlock( uint16_t addr, uint16_t len );
+void eepWriteBlock( uint16_t addr, const uint8_t* buf, uint16_t len );
+void eepReadBlock( uint16_t addr, uint8_t* buf, uint16_t len );
 
 #endif

@@ -17,9 +17,9 @@ The goal of this project is to provide **a compact, practical BASIC environment 
 日本語版READMEはこちら → [README_jp.md](README_jp.md)
 
 ![nanoBASIC UNO screenshot](./images/screenshot_1.png)  
-Example run of nanoBASIC UNO. After the startup banner (Ver 0.14),
-it demonstrates multiple statements on one line, a FOR/NEXT loop,
-and a simple LED blink routine using Arduino UNO’s built-in D13 pin.
+Example run of nanoBASIC UNO. After the startup banner (Ver 0.14),  
+it demonstrates multiple statements on one line, a FOR/NEXT loop,  
+and a simple LED blink routine using Arduino UNO’s built-in D13 pin.  
 The Ctrl-C break behavior is also shown.
 
 ---
@@ -27,26 +27,21 @@ The Ctrl-C break behavior is also shown.
 ## ✨ Features
 
 * **Minimal BASIC interpreter architecture**
-
   * Line numbers behave as labels
   * Intermediate bytecode virtual machine
   * Recursive-descent expression parser
-
 * **Runs on Arduino UNO (ATmega328P)**
-
+* **REPL Mode / Run Mode suported**
 * **GPIO / ADC / PWM / TICK / INKEY supported**
-
 * Includes classic BASIC features such as
   **DATA / READ / RESTORE**
-
 * Supports modern operators such as
   **+= / -= / <<= / >>= / && / ||**
-
+* **SAVE / LOAD** to store and load programs,  
+  with support for **AutoRun**
 * Hardware-dependent components are isolated in a
   **BIOS layer (bios_uno.cpp)**
-
 * Clean, portable header structure
-
 * MIT License
 
 ---
@@ -170,19 +165,19 @@ Configure the serial monitor as follows:
 Startup message:
 
 ```
-NanoBASIC UNO Ver 0.14
+NanoBASIC UNO Ver 0.15
 OK
 ```
 
 ---
 
-## 💡 Interactive Mode vs Program Mode
+## 💡 REPL vs Run Mode
 
 NanoBASIC UNO provides **two execution modes**.
 
 ---
 
-### 🔹 1. Interactive Mode (direct execution)
+### 🔹 1. REPL (Interactive) Mode
 
 Upon startup, each input line is **executed immediately**
 and **not saved** to the program area.
@@ -204,7 +199,7 @@ OK
 
 ---
 
-### 🔹 2. Program Mode (PROG)
+### 🔹 2. Run (Program execution) Mode
 
 For storing multiple program lines, enter:
 
@@ -251,8 +246,8 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 | INPUT                      | Input                       |
 | GOTO                       | Jump to line number         |
 | GOSUB / RETURN             | Subroutine                  |
-| FOR / NEXT                 | Loop                        |
-| DO / LOOP / WHILE          | Loop control                |
+| FOR / NEXT                 | Counting loop               |
+| DO / LOOP / WHILE          | Conditional loop            |
 | CONTINUE / EXIT            | Loop modifiers              |
 | IF / ELSEIF / ELSE / ENDIF | Conditional branching       |
 | DATA / READ / RESTORE      | Data table handling         |
@@ -261,7 +256,9 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 | DELAY / PAUSE              | Delay                       |
 | END / STOP                 | Terminate / break execution |
 | RESUME                     | Resume from STOP/BREAK      |
-| RUN / PROG / NEW / LIST    | Program control             |
+| RESET                      | System control              |
+| RUN / NEW                  | Program control             |
+| PROG / LIST / SAVE / LOAD  | Program management          |
 | RANDOMIZE                  | Initialize random generator |
 
 ### Functions
@@ -281,13 +278,12 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 ### 🔣 Operators
 | Operator               | Meaning               |
 | ---------------------- | --------------------- |
-| + - * / %              | Arithmetic            |
-| - ! ~                  | Unary ops             |
-| & | ^                  | Bitwise ops           |
-| && ||                  | Logical ops           |
-| << >>                  | Shift ops             |
-| = == <> <= >= <        | Comparison            |
-| += -= *= /= %= <<= >>= | Compound assignment   |
+| +, -, *, /, %          | Arithmetic            |
+| -, !, ~                | Unary ops             |
+| &, \|, ^               | Bitwise ops           |
+| &&, \|\|               | Logical ops           |
+| <<, >>                 | Shift ops             |
+| =, ==, <>, <=, >=, <   | Comparison            |
 
 ### () Parentheses
 Parentheses override standard operator precedence.
@@ -298,19 +294,31 @@ No floating-point support.
 Overflow is not checked.  
 * Default: decimal
 * `$xxxx`: hexadecimal
+```
+A=10
+B=$BEEF
+```
 
 ### Variables
 * General variables: **A–Z** (single-letter)
 * Array variable: **@[0]–@[63]**
+```
+Z=10
+@[1]=0
+```
 
 ### Assignment
 Assignments use the form:
-
 ```
-A = expression
+A=(B+10)*5
 ```
 
+### Compound assignments
 Compound assignments are also supported.
++=、 =、 *=、 /=、 %=、 |=、 &=、 ^= 、 <<=、 >>=
+```
+A<<=2
+```
 
 ### Increment / Decrement
 Appending **"++"** or **"--"** to a variable increments or decrements its value by 1.  
@@ -325,12 +333,13 @@ They may appear **only directly after a variable**.
 ### Strings
 Strings may be used **only inside PRINT (or '?')**.
 ```
-A=5
-? "A="A
-A=5
+? "Hello!"
+Hello!
+OK
+A=5:? "A="A*2
+A=10
 OK
 ```
-
 String variables do not exist.
 
 ### Condition Evaluation

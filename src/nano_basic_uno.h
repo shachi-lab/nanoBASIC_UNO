@@ -21,8 +21,8 @@
  * License: MIT
  */
 
-#ifndef	__NANO_BASIC_UNO_H
-#define	__NANO_BASIC_UNO_H
+#ifndef __NANO_BASIC_UNO_H
+#define __NANO_BASIC_UNO_H
 
 void basicInit( void );
 void basicMain( void );

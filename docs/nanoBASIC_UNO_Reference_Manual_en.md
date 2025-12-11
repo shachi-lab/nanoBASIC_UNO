@@ -1,7 +1,7 @@
 # 📘**nanoBASIC UNO Reference Manual**
 
 English edition (Translated from the Japanese manual)
-for Version 0.14
+for Version 0.15
 
 ## Overview
 nanoBASIC UNO is a BASIC interpreter running on Arduino UNO (ATmega328P).  
@@ -11,16 +11,18 @@ Each command entered from the serial terminal is translated into an intermediate
 * Each line is translated into bytecode, limited to 63 bytes
 * Hand-written expression parser without recursion
 * Program area resides in RAM and is directly written using the PROG command
+* Programs can be saved in EEPROM
+* REPL / Run operating mode
 
 ---
 
 ## Operation Modes
 nanoBASIC has two operation modes:
 
-* **Interactive Mode:**  
+* **REPL Mode:**  
   Commands typed from the terminal are executed one line at a time.
 
-* **Program Mode:**  
+* **Run Mode:**  
   Executes the program stored in the program area sequentially.  
   After startup, the interpreter is in interactive mode.
 
@@ -38,6 +40,10 @@ All numeric values in nanoBASIC are 16-bit signed integers (−32768 to 32767).
 Floating-point types are not supported.  
 Overflow is not handled.  
 Decimal numbers are default; prefix with `$` to specify hexadecimal.
+```
+A=10
+B=$BEEF
+```
 
 ---
 
@@ -48,11 +54,6 @@ Decimal numbers are default; prefix with `$` to specify hexadecimal.
 All variables are global.  
 There are no local variables.  
 String variables do not exist.
-
----
-
-## Expressions
-An expression consists of numbers and operators.
 
 ---
 
@@ -111,8 +112,10 @@ An expression consists of numbers and operators.
 ---
 
 ## Expressions in Commands
-Expressions can be used as arguments to commands or in assignments.  
-They follow normal operator precedence.
+An "expression" is anything that uses numbers and operators.
+Expressions are written using numbers, variables, and operators.
+Expressions can be used as arguments to commands or in assignments. 
+Calculations are performed according to basic priority.
 
 ---
 
@@ -122,6 +125,9 @@ variable = expression
 ```
 Assigns the result of the expression to the variable.  
 There is no `LET` statement.
+```
+A=10
+```
 
 ---
 
@@ -197,9 +203,9 @@ When writing after a command, place comments after a `:`.
 
 ---
 
-# Commands
+## Commands
 
-## PRINT
+### PRINT
 ```
 PRINT expression
 ? expression
@@ -210,8 +216,8 @@ PRINT expression
 * Ending a PRINT statement with `;` suppresses the newline.  
 * Strings, `CHR()`, and formatting functions may be used only inside PRINT.
 
----
-## INPUT
+
+### INPUT
 ```
 INPUT variable
 ```
@@ -220,27 +226,29 @@ INPUT variable
 * If input begins with `$`, it is parsed as hexadecimal.  
 * Appending `$` to the variable name stores the ASCII code of the first character.
 
----
-
-## GOTO
+### GOTO
 ```
 GOTO expression
 ```
 Jumps to the label indicated by the expression.
+The expression must start with a numeric literal.
 
----
-
-## GOSUB / RETURN
+### GOSUB
 ```
 GOSUB expression
 RETURN
 ```
+Jumps to a subroutine with the label number specified by the expression.
+A RETURN command within the subroutine will return to the statement following this command.
+The expression must start with a numeric literal.
 
-Jumps to a subroutine; RETURN returns execution to the following statement.
+### RETURN
+```
+RETURN
+```
+Return from the subroutine.
 
----
-
-## IF / THEN / ELSEIF / ELSE / ENDIF
+### IF / THEN / ELSEIF / ELSE / ENDIF
 ```
 IF expr THEN statements
 ELSEIF expr THEN statements
@@ -252,32 +260,34 @@ ENDIF
 * Non-zero = true  
 * A number following THEN/ELSE acts as GOTO
 
----
-
-## FOR / TO / STEP / NEXT
+### FOR / TO / STEP / NEXT
 ```
 FOR var = expr1 TO expr2 STEP expr3
 ...
 NEXT
 ```
-STEP may be omitted (defaults to 1).
+After assigning expr1 to the variable name, it loops between NEXT and NEXT until the variable becomes expr2.
+Each time the program reaches NEXT, the value of expression 3 is added to the variable.
+STEP expr3 is optional, and if it is omitted, 1 will be specified.
+
 ---
 
-## DO / LOOP
+### DO / LOOP
 ```
-
 DO
 ...
 LOOP
 ```
+Repeat DO~LOOP
 
 ### DO / LOOP WHILE
 ```
-
 DO
 ...
 LOOP WHILE expr
 ```
+When the result of the expr is "true", DO ~ LOOP WHILE will be repeated.
+After executing DO ~ LOOP, the expr is evaluated and if it is true, it will be repeated.
 
 ### WHILE / LOOP
 ```
@@ -285,76 +295,85 @@ WHILE expr
 ...
 LOOP
 ```
+If the result of the expr is "true", WHILE ~ LOOP will be repeated.
+After evaluating the expr, if it is true, WHILE ~ LOOP will be repeated.
 
----
-
-## EXIT
+### EXIT
+```
+EXIT
+```
 Exits the nearest FOR/NEXT or DO/WHILE/LOOP block.  
 Execution continues after the corresponding NEXT or LOOP.
 
----
-
-## CONTINUE
+### CONTINUE
+```
+CONTINUE
+```
 Skips to the next iteration of a loop.
 
----
+### END
+```
+END
+```
+Terminates program execution and returns to REPL mode.
+When execute in REPL mode, it initializes the nested stack and the suspended state.
 
-## END
-Terminates program execution and returns to interactive mode.
-
----
-
-## STOP / RESUME
+### STOP
 ```
 STOP
+```
+Suspend program execution and returns to REPL mode.
+It can be resumed with RESUME.
+
+### RESUME
+```
 RESUME
 ```
+Resumes processing that was suspended by STOP or by receiving Ctrl-C from the serial port.
+A suspension due to an error cannot be resumed.
 
-STOP halts execution.  
-RESUME continues only if stopped normally (not by error).
-
----
-
-## DELAY
+### DELAY
 ```
 DELAY expression
 ```
 Waits for the specified number of milliseconds.
 
----
-
-## PAUSE
+### PAUSE
+```
+PAUSE
+```
 Waits until one character is received from the serial port.
 
----
-
-## DATA
+### DATA
 ```
 DATA expr1, expr2, ...
 ```
+Data values for READ.   
+Expressions may be used.
 
-Data values for READ. Expressions may be used.
-
----
-
-## READ / RESTORE
+### READ
 ```
 READ variable
+```
+READ retrieves values from DATA statements in order.  
+
+### RESTORE
+```
 RESTORE
 ```
-
-READ retrieves values from DATA statements in order.  
 RESTORE resets the read position to the start.
 
----
-
-## NEW
+### NEW
+```
+NEW
+```
 Clears the program area.
 
----
-
-## PROG
-Writes program lines into the RAM program area.
+### PROG
+```
+PROG
+```
+Writes program lines into the program area.
 
 ```
 PROG
@@ -370,39 +389,64 @@ OK
 RUN
 ```
 
-Notes:
-
+Notes:  
 * Each line is compiled as soon as it is entered.  
 * When sending lines automatically, insert a delay of about **100 ms** between lines.  
 * The program area resides in RAM and is cleared on reset or power-off.
 
----
+### RUN
+```
+RUN
+```
+It will enter Run mode and the program in the program area will be executed from the beginning.
+Prior to this, clears all variables to zero
+When the program execution in the program area is completed or interrupted,
+it will return to REPL mode.
 
-## RUN
-Clears all variables to zero and runs the stored program.
-
----
-
-## LIST
+### LIST
+```
+LIST
+```
 Outputs the stored program.
 
----
-
-## RANDOMIZE
+### SAVE
 ```
+SAVE [Arguments]
+```
+Saves or erases the contents of the program area to EEPROM.  
+Programs saved to EEPROM are not erased even by reset or power outage.  
+You can also set them to run automatically.  
+Programs saved to EEPROM can be loaded with the LOAD command.  
 
+- **Normal Save** (No Arguments)
+Saves the contents of the program area to EEPROM.  
+An error occurs if the program area is empty (to prevent accidental operation).  
+AutoRun is disabled.  
+- **AutoRun Save** (Argument: `!`)
+In addition to a normal save, this command enables AutoRun and saves.  
+If AutoRun is enabled, the program will automatically run after LOAD when power is turned on.  
+- **Erase** (Argument: `0`)
+Erase the program stored in EEPROM.  
+The contents of the program area are not affected.  
+AutoRun is disabled.  
+
+### LOAD
+```
+LOAD
+```
+Loads a program stored in EEPROM into the program area.  
+This will replace any existing programs in the program area.  
+If there are no programs in the EEPROM, an error will occur.  
+
+### RANDOMIZE
+```
 RANDOMIZE expression
-
 ```
 Sets the random seed.
 
----
-
-## OUTP
+### OUTP
 ```
-
 OUTP pin, value
-
 ```
 Outputs a digital signal.
 
@@ -413,15 +457,10 @@ Outputs a digital signal.
 
 `0 = LOW`, non-zero = HIGH.
 
----
-
-## PWM
+### PWM
 ```
-
 PWM pin, value
-
 ```
-
 Outputs PWM using Arduino’s `analogWrite()` (8-bit duty: 0–255).
 
 | Pin | Function |
@@ -430,15 +469,15 @@ Outputs PWM using Arduino’s `analogWrite()` (8-bit duty: 0–255).
 
 ---
 
-# Functions
+## Functions
 
-## RND(expression)
+### RND(expression)
 Returns a random number less than the expression.
 
-## ABS(expression)
+### ABS(expression)
 Returns the absolute value.
 
-## INP(expression)
+### INP(expression)
 Reads a digital input.
 
 | Pin | Port |
@@ -448,9 +487,7 @@ Reads a digital input.
 
 Returns `0` (LOW) or `1` (HIGH).
 
----
-
-## ADC(expression)
+### ADC(expression)
 Reads an analog input.
 
 | ADC | Pin |
@@ -459,15 +496,11 @@ Reads an analog input.
 
 Returns an integer 0–1023.
 
----
-
-## CHR(expression)
+### CHR(expression)
 PRINT-only.  
 Outputs the character for the given ASCII code.
 
----
-
-## String Formatting Functions
+### String Formatting Functions
 PRINT-only.  
 
 Decimal:
@@ -484,8 +517,6 @@ Width rules:
 * `=0` → automatic width  
 * `>0` → space-padding  
 * `<0` → zero-padding  
-
-Examples:
 ```
 $(1234,4)   -> [ 4D2]
 $(1234,-4)  -> [04D2]
@@ -496,18 +527,34 @@ $(1234,-4)  -> [04D2]
 
 ---
 
-# Reserved Variables
+## Reserved Variables
+nanoBASIC UNO has system reserved variables.  
 
-## TICK
+### TICK
 System tick counter (increments approximately every 1 ms).
 
-## INKEY
+### INKEY
 ASCII code of the last received character.  
 Returns `0` if no character is available.
 
 ---
 
-# Error Messages
+## AutoRun Function
+NanoBASIC UNO provides an AutoRun feature that automatically executes a
+program stored in EEPROM when the device is powered on.
+
+AutoRun is enabled when the program is saved using `SAVE !`.  
+No additional configuration commands are required.
+A normal `SAVE` does not enable AutoRun.
+
+When AutoRun is active, the interpreter automatically performs
+`LOAD → RUN` approximately 3 seconds after power-on or reset.
+
+AutoRun can be cancelled by pressing Ctrl-C within this 3-second window.
+
+---
+
+## Error Messages
 
 * **Syntax error:**  
   Invalid syntax or unrecognized command.
@@ -519,7 +566,8 @@ Returns `0` if no character is available.
   Index is negative or greater than 255.
 
 * **Parameter error:**  
-  Required parameter is missing.
+  Required parameter is missing.  
+  Or the parameter range is invalid.
 
 * **Stack overflow error:**  
   Nesting depth exceeded 8 for GOSUB/FOR/DO/WHILE.
@@ -530,12 +578,15 @@ Returns `0` if no character is available.
 * **Label not found error:**  
   GOTO/GOSUB target label does not exist.
 
-* **Unless from pg-mode error:**  
+* **Unless from run-mode error:**  
   Command cannot be executed in program mode.  
   (LOAD, NEW, LIST, RUN, RESUME)
 
-* **Program area overflow error:**  
+* **PG area overflow error:**  
   Program writing exceeded available memory.
+
+* **PG empty error :**
+  The program is empty on the SVAE or LOAD command.
 
 * **Loop nothing error:**  
   Missing LOOP corresponding to DO/WHILE.
