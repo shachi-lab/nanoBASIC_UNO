@@ -113,17 +113,18 @@ typedef enum {
   ERROR_STACK     = 5,
   ERROR_RESUME    = 6,
   ERROR_LABEL     = 7,
-  ERROR_PRGMODE   = 8,
+  ERROR_NOTINRUN  = 8,
   ERROR_PGOVER    = 9,
   ERROR_PGEMPTY   = 10,
   ERROR_NOLOOP    = 11,
   ERROR_NOENDIF   = 12,
-  ERROR_UXNEXT    = 13,
-  ERROR_UXRETURN  = 14,
-  ERROR_UXLOOP    = 15,
-  ERROR_UXEXIT    = 16,
-  ERROR_UXCONTINUE= 17,
-  ERROR_CODE_MAX  = 17,
+  ERROR_TOODEEP   = 13,
+  ERROR_UXNEXT    = 14,
+  ERROR_UXRETURN  = 15,
+  ERROR_UXLOOP    = 16,
+  ERROR_UXEXIT    = 17,
+  ERROR_UXCONTINUE= 18,
+  ERROR_CODE_MAX  = 18,
 } error_code_t;
 
 // Request Code
@@ -139,7 +140,7 @@ typedef struct {
   int16_t   returnLineNumber;
   int16_t   *pvar;        /* counter variable */
   int16_t   limit;        /* limit value */
-  int16_t   step;       /* step value */
+  int16_t   step;         /* step value */
 } stack_t;
 
 #define FORM_NONE   0x00

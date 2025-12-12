@@ -1,4 +1,4 @@
-# NanoBASIC UNO (English)
+# nanoBASIC UNO (English)
 *A minimal BASIC interpreter for Arduino UNO (ATmega328P)*
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -7,7 +7,7 @@
 
 ## 💾 About
 
-**NanoBASIC UNO** is a minimal BASIC interpreter developed by shachi-lab for
+**nanoBASIC UNO** is a minimal BASIC interpreter developed by shachi-lab for
 **8-bit AVR microcontrollers (Arduino UNO / ATmega328P)**.
 
 It is a modern reconstruction of the original BASIC interpreter written in 2012 for the STM8S platform, redesigned with a clean architecture and reimplemented for today's MCU environments.
@@ -165,7 +165,7 @@ Configure the serial monitor as follows:
 Startup message:
 
 ```
-NanoBASIC UNO Ver 0.15
+nanoBASIC UNO Ver 0.15
 OK
 ```
 
@@ -264,10 +264,10 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 ### Functions
 | Function | Meaning        |
 | -------- | -------------- |
-| ABS      | Absolute value |
-| INP      | Digital input  |
-| ADC      | Analog input   |
-| RND      | Random number  |
+| ABS()    | Absolute value |
+| INP()    | Digital input  |
+| ADC()    | Analog input   |
+| RND()    | Random number  |
 
 ### Special Variables
 | Valiable | Meaning             |
@@ -276,20 +276,20 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 | INKEY    | Serial input buffer |
 
 ### 🔣 Operators
-| Operator               | Meaning               |
-| ---------------------- | --------------------- |
-| +, -, *, /, %          | Arithmetic            |
-| -, !, ~                | Unary ops             |
-| &, \|, ^               | Bitwise ops           |
-| &&, \|\|               | Logical ops           |
-| <<, >>                 | Shift ops             |
-| =, ==, <>, <=, >=, <   | Comparison            |
+| Operator                 | Meaning               |
+| ------------------------ | --------------------- |
+| +, -, *, /, %            | Arithmetic            |
+| -, !, ~                  | Unary ops             |
+| &, \|, ^                 | Bitwise ops           |
+| &&, \|\|                 | Logical ops           |
+| <<, >>                   | Shift ops             |
+| =, ==, <>, <=, >=, <, != | Comparison            |
 
 ### () Parentheses
 Parentheses override standard operator precedence.
 
 ### Numbers
-NanoBASIC uses **16-bit signed integers** (-32768 to 32767).  
+nanoBASIC uses **16-bit signed integers** (-32768 to 32767).  
 No floating-point support.  
 Overflow is not checked.  
 * Default: decimal

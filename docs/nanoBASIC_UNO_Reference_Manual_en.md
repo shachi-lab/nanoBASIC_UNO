@@ -98,7 +98,7 @@ String variables do not exist.
 | Operator | Meaning |
 |:---:|---|
 | = | Equal |
-| <> | Not equal |
+| <>,!= | Not equal |
 | < | Less than |
 | <= | Less than or equal |
 | > | Greater than |
@@ -540,7 +540,7 @@ Returns `0` if no character is available.
 ---
 
 ## AutoRun Function
-NanoBASIC UNO provides an AutoRun feature that automatically executes a
+nanoBASIC UNO provides an AutoRun feature that automatically executes a
 program stored in EEPROM when the device is powered on.
 
 AutoRun is enabled when the program is saved using `SAVE !`.  

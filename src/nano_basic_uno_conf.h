@@ -25,18 +25,19 @@
 #ifndef __NANO_BASIC_UNO_CONF_H
 #define __NANO_BASIC_UNO_CONF_H
 
-#define NAME_STR            "NanoBASIC UNO"
-#define VERSION_STR         "Ver 0.15"
+#define NAME_STR            "nanoBASIC UNO"
+#define VERSION_STR         "Ver 0.16"
 
 #define VERSION_MAJOR       0
-#define VERSION_MINOR       15
+#define VERSION_MINOR       16
 
-#define RAW_LINE_SIZE       64
-#define CODE_LINE_SIZE      64
+#define RAW_LINE_SIZE       80
+#define CODE_LINE_SIZE      80
 #define STACK_NUM           8
 #define ARRAY_INDEX_NUM     64
-#define PROGRAM_AREA_SIZE   512
+#define PROGRAM_AREA_SIZE   768
 #define AUTORUN_WAIT_TIME   3000
+#define EXPR_DEPTH_MAX      20
 
 #define CODE_DEBUG_ENABLE   0
 

@@ -1,4 +1,4 @@
-# NanoBASIC UNO  （日本語版）
+# nanoBASIC UNO  （日本語版）
 *A minimal BASIC interpreter for Arduino UNO (ATmega328P)*
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -7,7 +7,7 @@
 
 ## 💾このプロジェクトについて
 
-**NanoBASIC UNO** は、shachi-lab が開発した  
+**nanoBASIC UNO** は、shachi-lab が開発した  
 **8bit AVR（Arduino UNO）向けのミニマル BASIC インタプリタ**です。
 
 2012年に STM8S 用として作成した最初期バージョンをベースに、  
@@ -121,7 +121,7 @@ bios_uno.cpp / bios_uno.h を置き換えるだけで対応可能です。
 
 ## ⚙️AVR（Arduino UNO）固有の実装について
 
-NanoBASIC UNO は Arduino UNO（ATmega328P）のメモリ構造に最適化するため、
+nanoBASIC UNO は Arduino UNO（ATmega328P）のメモリ構造に最適化するため、
 一部の文字列処理が **AVR 固有の PROGMEM / pgm_read_byte() 形式**で実装されています。
 
 AVR は Harvard アーキテクチャであり、  
@@ -145,7 +145,7 @@ ESP32 / ARM / RP2040 など Flash と RAM が統合された MCU では
 - PROGMEM 使用部分を RAM 文字列に置き換える。  
 - `pgm_read_byte()` を単純なメモリアクセスに変更する。  
 
-この点を除けば NanoBASIC のコア部分はプラットフォーム非依存であり、  
+この点を除けば nanoBASIC のコア部分はプラットフォーム非依存であり、  
 移植は比較的容易です。
 
 ---
@@ -166,7 +166,7 @@ ESP32 / ARM / RP2040 など Flash と RAM が統合された MCU では
 起動メッセージ：
 
 ```
-NanoBASIC UNO Ver 0.15
+nanoBASIC UNO Ver 0.15
 OK
 ```
 
@@ -174,7 +174,7 @@ OK
 
 ## 💡 REPL Mode と Run Mode
 
-NanoBASIC UNO には **2つの動作モード**があります。
+nanoBASIC UNO には **2つの動作モード**があります。
 
 ### 🔹 1. REPL（対話実行）モード
 起動直後は入力した1行分のコマンドは **即実行されます。**  
@@ -256,10 +256,10 @@ RUN
 ### 関数
 | Function | Meaning |
 |----------|---------|
-| ABS      | 絶対値      |
-| INP      | デジタル入力 |
-| ADC      | アナログ入力 |
-| RND      | 乱数       |
+| ABS()    | 絶対値      |
+| INP()    | デジタル入力 |
+| ADC()    | アナログ入力 |
+| RND()    | 乱数       |
 
 ### 特殊変数
 | Valiable | Meaning |
@@ -269,20 +269,20 @@ RUN
 
 
 ### 演算子
-| Operator             | Meaning |
-|----------------------|---------|
-| +, -, *, /, %        | 算術演算子 |
-| -, !, ~              | 単項演算子 |
-| &,  \|,  ^           | ビット演算子 |
-| &&, \|\|             | 論理演算子 |
-| <<, >>               | シフト演算子
-| =, ==, <>, <=, >=, < | 比較演算子 |
+| Operator                | Meaning |
+|-------------------------|---------|
+| +, -, *, /, %           | 算術演算子 |
+| -, !, ~                 | 単項演算子 |
+| &,  \|,  ^              | ビット演算子 |
+| &&, \|\|                | 論理演算子 |
+| <<, >>                  | シフト演算子
+| =, ==, <>, <=, >=, <, != | 比較演算子 |
 
 ### カッコ  
 カッコで囲まれた内側の演算が優先されます。
 
 ### 数値  
-NanoBASIC の数値はすべて 16bit 整数（-32768〜32767）です。  
+nanoBASIC の数値はすべて 16bit 整数（-32768〜32767）です。  
 floatなどの浮動小数点はありません。
 演算によるオーバーフローは考慮しません。  
 指定が無い場合は10進数です。  

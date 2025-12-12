@@ -50,6 +50,7 @@ uint8_t *dataReadPointer;
 uint8_t *resumePointer;
 int16_t resumeLineNumber;
 int16_t progLength;
+int8_t exprDepth;
 
 uint8_t programArea[PROGRAM_AREA_SIZE];
 #define PROGRAM_AREA_TOP  programArea
@@ -95,7 +96,6 @@ void proc_read( void );
 void proc_restore( void );
 void proc_pwm( void );
 
-uint8_t *proc_exit_cont_sub( error_code_t err );
 void proc_let_valiable( int16_t *pvar );
 uint8_t proc_let( int16_t *pvar, uint8_t ope );
 
@@ -110,8 +110,8 @@ int16_t calcValueFunc( void );
 void printInternalcode( void );
 void printError( void );
 void executeBreak( void );
-error_code_t checkST( uint8_t ch );
-error_code_t checkDelimiter( void );
+uint8_t checkST( uint8_t ch );
+uint8_t checkDelimiter( void );
 uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, uint16_t *lnum );
 int8_t checkBreakKey( void );
 error_code_t delayMs( int16_t val );
@@ -231,21 +231,22 @@ const char error04[] PROGMEM = "Parameter";           // 04 : ERROR_PARA
 const char error05[] PROGMEM = "Stack overflow";      // 05 : ERROR_STACK
 const char error06[] PROGMEM = "Can't resume";        // 06 : ERROR_RESUME
 const char error07[] PROGMEM = "Label not found";     // 07 : ERROR_LABEL
-const char error08[] PROGMEM = "Unless from run-mode";// 08 : ERROR_PRGMODE
+const char error08[] PROGMEM = "Not in run-mode";     // 08 : ERROR_NOTINRUN
 const char error09[] PROGMEM = "PG area overflow";    // 09 : ERROR_PGOVER
 const char error10[] PROGMEM = "PG empty";            // 10 : ERROR_PGOVER
 const char error11[] PROGMEM = "Loop nothing";        // 11 : ERROR_NOLOOP
 const char error12[] PROGMEM = "Endif not found";     // 12 : ERROR_NOENDIF
-const char error13[] PROGMEM = "Next";                // 13 : ERROR_UXNEXT
-const char error14[] PROGMEM = "Return";              // 14 : ERROR_UXRETURN
-const char error15[] PROGMEM = "Loop";                // 15 : ERROR_UXLOOP
-const char error16[] PROGMEM = "Exit";                // 16 : ERROR_UXEXIT
-const char error17[] PROGMEM = "Continue";            // 17 : ERROR_UXCONTINUE
+const char error13[] PROGMEM = "Expr too deep";       // 13 : ERROR_TOODEEP
+const char error14[] PROGMEM = "Next";                // 14 : ERROR_UXNEXT
+const char error15[] PROGMEM = "Return";              // 15 : ERROR_UXRETURN
+const char error16[] PROGMEM = "Loop";                // 16 : ERROR_UXLOOP
+const char error17[] PROGMEM = "Exit";                // 17 : ERROR_UXEXIT
+const char error18[] PROGMEM = "Continue";            // 18 : ERROR_UXCONTINUE
 
 const char * const errorSting[] PROGMEM = {
   error00, error01, error02, error03, error04, error05, error06, error07,
-  error08, error09, error10, error11,
-  error12, error13, error14, error15, error16, error17
+  error08, error09, error10, error11, error12, error13,
+  error14, error15, error16, error17, error18
 };
 
 #define IS_VAL(c)           ((c) == ST_DECVAL || (c) == ST_HEXVAL || (c) == VAL_ZERO)
@@ -253,9 +254,6 @@ const char * const errorSting[] PROGMEM = {
 #define IS_OPERATOR_CHR(c)  ((c) =='+' || (c)=='-' || (c)=='*' || (c)=='/' || (c)=='%' || (c)=='|' || (c)=='&' || (c)=='^')
 #define IS_VALID_CHR(c)     ((c) <0x3f || (c)=='^' || (c)=='|' || (c)=='~' || (c)=='[' || (c)==']')
 #define IS_DELIMITER(c)     ((c) == ':' || (c) == ST_EOL || (c) == ST_ELSE || (c) == ST_ENDIF)
-#define IS_DIVZERO(val)     ((val) ? 0 : (errorCode = ERROR_DIVZERO))
-#define CHK_ST(c)           (checkST( c ) == ERROR_NONE)
-#define CHK_DELIMITER()     (checkDelimiter() == ERROR_NONE)
 
 //*************************************************
 void basicInit( void )
@@ -358,7 +356,7 @@ void printError( void )
       if( errorCode >= ERROR_UXNEXT ){
         printStringFlash( F("Unexpected ") );
       }
-      if(errorCode > ERROR_CODE_MAX) errorCode = ERROR_CODE_MAX;
+      if(errorCode > ERROR_CODE_MAX) errorCode = ERROR_SYNTAX;
       PGM_P p = (PGM_P)pgm_read_ptr(&errorSting[errorCode]);
       printStringFlash( FPSTR(p) );
       printStringFlash( F(" error") );
@@ -407,6 +405,7 @@ void interpreterMain( void )
         printError();
         return;
       }
+      exprDepth = 0;
       returnRequest = 0;
       ch = *executionPointer++;
       if( ch == ST_EOL ){
@@ -729,12 +728,25 @@ uint8_t isDelimiter( uint8_t ch )
 }
 
 //*************************************************
-error_code_t checkDelimiter( void )
+uint8_t checkDelimiter( void )
 {
-  if( !isDelimiter( *executionPointer ) ){
+  if( errorCode != ERROR_NONE ) return true;
+	if( !isDelimiter( *executionPointer ) ){
     errorCode = ERROR_SYNTAX;
+    return true;
   }
-  return errorCode;
+  return false;
+}
+
+//*************************************************
+uint8_t checkST( uint8_t ch )
+{
+  if( errorCode != ERROR_NONE ) return true;
+  if( *executionPointer++ != ch ){
+    errorCode = ERROR_SYNTAX;
+    return true;
+  }
+  return false;
 }
 
 //*************************************************
@@ -751,16 +763,6 @@ int16_t *getParameterPointer( void )
   }
   errorCode = ERROR_SYNTAX;
   return NULL;
-}
-
-//*************************************************
-error_code_t checkST( uint8_t ch )
-{
-  if( *executionPointer++ != ch ){
-    errorCode = ERROR_SYNTAX;
-    return errorCode;
-  }
-  return ERROR_NONE;
 }
 
 //*************************************************
@@ -864,7 +866,7 @@ static char *get_StringPara_Form( uint8_t fm )
   uint8_t len = 0;
   int16_t val;
 
-  if ( !CHK_ST( '(' ) ) return NULL;
+  if ( checkST( '(' ) ) return NULL;
   val = expr();
   if ( errorCode ) return NULL;
   if ( *executionPointer == ',' )
@@ -872,8 +874,7 @@ static char *get_StringPara_Form( uint8_t fm )
     executionPointer++;
     len = expr();
   }
-  if ( errorCode ) return NULL;
-  if ( !CHK_ST( ')' ) != ERROR_NONE ) return NULL;
+  if ( checkST( ')' ) ) return NULL;
   return conv2str( val, fm, len );
 }
 
@@ -954,7 +955,7 @@ void proc_input( void )
   if( flg == ST_HEXCHR ){
     executionPointer++;
   }
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
 
   if( inputString() == NULL ){
     return;
@@ -1008,7 +1009,7 @@ void proc_return( void )
   stack_t *prevsp;
   prevsp = &stacks[stackPointer];
 
-  if( !CHK_DELIMITER() )  return;
+  if( checkDelimiter() )  return;
   while( true ) {
     if( stackPointer == 0 ) {
       errorCode = ERROR_UXRETURN;
@@ -1031,10 +1032,9 @@ void proc_for( void )
 
   pvar = getParameterPointer();
   if( pvar == NULL )  return;
-  if( !CHK_ST( '=' ) ) return;
+  if( checkST( '=' ) ) return;
   from = expr();
-  if( errorCode != ERROR_NONE ) return;
-  if( !CHK_ST( ST_TO ) ) return;
+  if( checkST( ST_TO ) ) return;
   to = expr();
   if( errorCode != ERROR_NONE ) return;
   ch = *executionPointer++;
@@ -1058,7 +1058,7 @@ void proc_next( void )
 {
   stack_t *prevsp;
 
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   prevsp = popStack( ST_FOR );
   if( prevsp == NULL ){
     errorCode = ERROR_UXNEXT;
@@ -1087,7 +1087,7 @@ void proc_do( void )
 {
   stack_t *prevsp;
 
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   prevsp = pushStack( ST_DO );
   if( prevsp == NULL )  return;
   prevsp->returnPointer = executionPointer - 1;
@@ -1098,23 +1098,20 @@ void proc_loop( void )
 {
   int16_t val;
   stack_t *prevsp;
-  uint8_t ch;
 
   prevsp = popStack( ST_DO );
   if( prevsp == NULL ){
     errorCode = ERROR_UXLOOP;
     return;
   }
-  ch = *executionPointer;
-  if( ch == ST_WHILE ){
+
+  if( *executionPointer == ST_WHILE ){
     executionPointer++;
     val = expr();
-    if( !CHK_DELIMITER() ) return;
-    if( !val ){
-      return;
-    }
+    if( checkDelimiter() ) return;
+    if( !val ) return;
   }else
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   executionPointer = prevsp->returnPointer;
   lineNumber = prevsp->returnLineNumber;
 }
@@ -1128,7 +1125,7 @@ void proc_while( void )
 
   ptr = executionPointer;
   val = expr();
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   if( val ) {
     prevsp = pushStack( ST_DO );
     if( prevsp == NULL )  return;
@@ -1147,14 +1144,30 @@ void proc_while( void )
 //*************************************************
 void proc_exit( void )
 {
-  uint8_t *ptr;
+  stack_t *prevsp;
+  uint8_t *ptr, tp;
 
-  ptr = proc_exit_cont_sub( ERROR_UXEXIT );
-  if( ptr == NULL){
+  if( checkDelimiter() ) return;
+  if( stackPointer == 0 ) {
+    errorCode = ERROR_UXEXIT;
+    return;
+  }
+
+  prevsp = &stacks[stackPointer-1];
+  if( prevsp->type == ST_FOR ) tp = ST_NEXT;
+  else
+  if( prevsp->type == ST_DO  ) tp = ST_LOOP;
+  else{
+    errorCode = ERROR_UXEXIT;
+    return;
+  }
+  ptr = findST( tp, tp, tp, &lineNumber);
+  if( ptr == NULL ){
+    errorCode = ERROR_UXEXIT;
     return;
   }
   stackPointer--;
-  while( !isDelimiter( *ptr ) )ptr++;
+  while( !isDelimiter( *ptr ) ) ptr++;
   executionPointer = ptr;
 }
 
@@ -1162,39 +1175,28 @@ void proc_exit( void )
 void proc_continue( void )
 {
   uint8_t *ptr;
+  stack_t *prevsp;
 
-  ptr = proc_exit_cont_sub( ERROR_UXCONTINUE );
-  if( ptr == NULL){
+  if( checkDelimiter() ) return;
+  if( stackPointer == 0 ) {
+    errorCode = ERROR_UXCONTINUE;
     return;
   }
-  executionPointer = ptr - 1;
-}
 
-//*************************************************
-uint8_t *proc_exit_cont_sub( error_code_t err )
-{
-  stack_t *prevsp;
-  uint8_t *ptr, tp;
-
-  if( stackPointer == 0 ) {
-    errorCode = err;
-//    return NULL;
-  }
-  if( !CHK_DELIMITER() ) return NULL;
   prevsp = &stacks[stackPointer-1];
-  if( prevsp->type == ST_FOR ) tp = ST_NEXT;
-  else
-  if( prevsp->type == ST_DO  ) tp = ST_LOOP;
-  else{
-    errorCode = err;
-    return NULL;
+  if( prevsp->type == ST_DO ) {
+  	executionPointer = prevsp->returnPointer;
+  	lineNumber = prevsp->returnLineNumber;
+		return;
+	} else
+  if( prevsp->type == ST_FOR ) {
+    ptr = findST( ST_NEXT, ST_NEXT, ST_NEXT, &lineNumber);
+  	if( ptr != NULL ){
+		  executionPointer = ptr - 1;
+		  return;
+    }
   }
-  ptr = findST( tp, 0xff, 0xff, &lineNumber);
-  if( ptr == NULL ){
-    errorCode = err;
-    return NULL;
-  }
-  return ptr;
+  errorCode = ERROR_UXCONTINUE;
 }
 
 //*************************************************
@@ -1205,8 +1207,7 @@ void proc_if( void )
 
   do{
     val = expr();
-    if( errorCode != ERROR_NONE ) return;
-    if( !CHK_ST( ST_THEN ) ) return;
+    if( checkST( ST_THEN ) ) return;
     if( val ) {
       if( IS_VAL( *executionPointer ) ) {
         proc_goto();
@@ -1273,7 +1274,7 @@ void proc_run( void )
 //*************************************************
 void proc_resume( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   if( resumePointer == NULL ) {
     errorCode = ERROR_RESUME;
     return;
@@ -1285,14 +1286,14 @@ void proc_resume( void )
 //*************************************************
 void proc_stop( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   executeBreak();
 }
 
 //*************************************************
 void proc_end( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   returnRequest = REQUEST_EXIT;
   programInit();
 }
@@ -1302,7 +1303,7 @@ void proc_new( void )
 {
   uint8_t *ptr;
 
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   initializeValiables();
   programNew();
 }
@@ -1313,7 +1314,7 @@ void proc_list( void )
   int16_t val;
   uint8_t flag, ch, *ptr;
 
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   ptr = (uint8_t*)PROGRAM_AREA_TOP;
   while( *ptr++ != ST_EOL ){
     flag = true;
@@ -1377,9 +1378,9 @@ void proc_prog( void )
   uint8_t len, *ptr, *src;
   uint16_t  remain;
 
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   if( lineNumber ){
-    errorCode = ERROR_PRGMODE;
+    errorCode = ERROR_NOTINRUN;
     return;
   }
   remain = PROGRAM_AREA_SIZE - 3;
@@ -1423,9 +1424,9 @@ void proc_save( void )
   if( flag == VAL_ZERO || flag == '!' ) {
     executionPointer++;
   }
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   if( lineNumber ){
-    errorCode = ERROR_PRGMODE;
+    errorCode = ERROR_NOTINRUN;
     return;
   }
 
@@ -1473,9 +1474,9 @@ int8_t progLoad( void )
 //*************************************************
 void proc_load( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   if( lineNumber ){
-    errorCode = ERROR_PRGMODE;
+    errorCode = ERROR_NOTINRUN;
     return;
   }
   if( progLoad() < 1 ){
@@ -1498,10 +1499,9 @@ void proc_outp( void )
   int16_t val_1, val_2;
 
   val_1 = expr();
-  if( errorCode != ERROR_NONE ) return;
-  if( !CHK_ST( ',' ) ) return;
+  if( checkST( ',' ) ) return;
   val_2 = expr();
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
 
   if( bios_writeGpio( val_1, val_2 ) ) {
       errorCode = ERROR_PARA;
@@ -1524,22 +1524,33 @@ void proc_delay( void )
   int16_t val;
 
   val = expr();
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   delayMs( val );
 }
 
 //*************************************************
 void proc_pause( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   while( checkBreakKey() == 0 );
 }
 
 //*************************************************
 void proc_reset( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   bios_systemReset();
+}
+
+//*************************************************
+uint8_t checkDivZero( uint16_t val)
+{
+	if( errorCode != ERROR_NONE ) return true;
+	if( val == 0 ) {
+	  errorCode = ERROR_DIVZERO;
+	  return true;
+  }
+	return false;
 }
 
 //*************************************************
@@ -1548,15 +1559,15 @@ uint8_t proc_let( int16_t *pvar, uint8_t ope )
   if ( ope == executionPointer[1] )
   {
     executionPointer += 2;
-    if( ope == '+' ) { if( CHK_DELIMITER() ) (*pvar)++; return errorCode; }
-    if( ope == '-' ) { if( CHK_DELIMITER() ) (*pvar)--; return errorCode; }
+		if( ope == '+' ) { if( !checkDelimiter() ) (*pvar)++; return errorCode; }
+  	if( ope == '-' ) { if( !checkDelimiter() ) (*pvar)--; return errorCode; }
     if( ope !='<' && ope != '>' ) return errorCode = ERROR_SYNTAX;
   } else
   if ( IS_OPERATOR_CHR( ope ) )
   {
     ++executionPointer;
   }
-  if ( !CHK_ST( '=' ) ) return errorCode;
+  if ( checkST( '=' ) ) return errorCode;
   int16_t val = expr();
   if ( errorCode ) return errorCode;
   switch ( ope )
@@ -1564,8 +1575,8 @@ uint8_t proc_let( int16_t *pvar, uint8_t ope )
   case '+' : *pvar += val; break;
   case '-' : *pvar -= val; break;
   case '*' : *pvar *= val; break;
-  case '/' : if ( !IS_DIVZERO( val ) ) *pvar /= val; break;
-  case '%' : if ( !IS_DIVZERO( val ) ) *pvar %= val; break;
+  case '/' : if ( checkDivZero( val ) ) *pvar /= val; break;
+  case '%' : if ( checkDivZero( val ) ) *pvar %= val; break;
   case '|' : *pvar |= val; break;
   case '&' : *pvar &= val; break;
   case '^' : *pvar ^= val; break;
@@ -1580,6 +1591,7 @@ uint8_t proc_let( int16_t *pvar, uint8_t ope )
 void proc_let_valiable( int16_t *pvar )
 {
   proc_let( pvar, *executionPointer );
+  checkDelimiter();
 }
 
 //*************************************************
@@ -1588,7 +1600,7 @@ void proc_randomize( void )
   int16_t val;
 
   val = expr();
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   bios_randomize( val );
 }
 
@@ -1617,7 +1629,7 @@ void proc_read( void )
 
   pvar = getParameterPointer();
 //  if( pvar == NULL )  return;
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
 
   ptrsave = executionPointer;
   executionPointer = ( dataReadPointer == 0 ) ? (uint8_t*)PROGRAM_AREA_TOP : dataReadPointer;
@@ -1652,7 +1664,7 @@ void proc_read( void )
 //*************************************************
 void proc_restore( void )
 {
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
   dataReadPointer = 0;
 }
 
@@ -1662,10 +1674,9 @@ void proc_pwm( void )
   int16_t val_1, val_2;
 
   val_1 = expr();
-  if( errorCode != ERROR_NONE ) return;
-  if( !CHK_ST( ',' ) ) return;
+  if( checkST( ',' ) ) return;
   val_2 = expr();
-  if( !CHK_DELIMITER() ) return;
+  if( checkDelimiter() ) return;
 
   if( bios_setPwm( val_1, val_2 ) ) {
       errorCode = ERROR_PARA;
@@ -1677,7 +1688,7 @@ int16_t *getArrayReference( void )
 {
   int16_t index, *pvar;
 
-  if( !CHK_ST( '[' ) ) return NULL;
+  if( checkST( '[' ) ) return NULL;
   index = expr();
   if( errorCode != ERROR_NONE ){ return NULL; }
   if( index < 0 || index >= ARRAY_INDEX_NUM ){
@@ -1685,7 +1696,7 @@ int16_t *getArrayReference( void )
     return NULL;
   }
   pvar = &arrayValiables[index];
-  if( !CHK_ST( ']' ) ) return NULL;
+  if( checkST( ']' ) ) return NULL;
   return pvar;
 }
 
@@ -1694,9 +1705,9 @@ int16_t calcValueFunc( void )
 {
   int16_t val;
 
-  if( !CHK_ST( '(' ) ) return -1;
+  if( checkST( '(' ) ) return -1;
   val = expr();
-  if( !CHK_ST( ')' ) ) return -1;
+  if( checkST( ')' ) ) return -1;
   return val;
 }
 
@@ -1705,6 +1716,11 @@ int16_t calcValue( void )
 {
   uint8_t ch;
   int16_t *pvar, val;
+
+  if( ++exprDepth > EXPR_DEPTH_MAX ) {
+    errorCode = ERROR_TOODEEP;
+    return -1;
+  }
 
   ch = *executionPointer++;
   if( isupper( ch ) ){
@@ -1726,7 +1742,7 @@ int16_t calcValue( void )
     return val;
   case '(':
     val = expr();
-    if( !CHK_ST( ')' ) ) break;
+    if( checkST( ')' ) ) break;
     return val;
   case '-':
     return -calcValue();
@@ -1793,13 +1809,13 @@ int16_t expr4th( void )
       break;
     case '/':
       val = calcValue();
-      if( !IS_DIVZERO( val ) ) {
+      if( checkDivZero( val ) ) {
         acc = acc / val;
       }
       break;
     case '%':
       val = calcValue();
-      if( !IS_DIVZERO( val ) ) {
+      if( checkDivZero( val ) ) {
         acc = acc % val;
       }
       break;
@@ -1883,6 +1899,13 @@ int16_t expr2nd( void )
       tmp = expr3nd();
       acc = (acc == tmp);     // =, ==
       break;
+		case '!':
+			if( *executionPointer == '=' ) {
+				executionPointer++;
+      	tmp = expr3nd();
+      	acc = (acc != tmp);     // !=
+      	break;
+			}
     default:
       executionPointer--;
       return acc;
