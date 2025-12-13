@@ -1,8 +1,8 @@
 /*
- * NanoBASIC UNO - Configuration / Build Settings
+ * nanoBASIC UNO - Configuration / Build Settings
  * ------------------------------------------------
  * Configuration parameters and metadata for the
- * Arduino UNO (ATmega328P) port of NanoBASIC.
+ * Arduino UNO (ATmega328P) port of nanoBASIC.
  *
  * This header defines:
  *   - Version string
@@ -26,10 +26,10 @@
 #define __NANO_BASIC_UNO_CONF_H
 
 #define NAME_STR            "nanoBASIC UNO"
-#define VERSION_STR         "Ver 0.16"
+#define VERSION_STR         "Ver 0.17"
 
 #define VERSION_MAJOR       0
-#define VERSION_MINOR       16
+#define VERSION_MINOR       17
 
 #define RAW_LINE_SIZE       80
 #define CODE_LINE_SIZE      80

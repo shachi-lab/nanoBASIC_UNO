@@ -1,9 +1,9 @@
-// NanoBASIC UNO
+// nanoBASIC UNO
 // Entry point for Arduino sketch
 // --------------------------------
 // Target Board: Arduino UNO (ATmega328P)
 //
-// The BASIC interpreter core is implemented in nano_basic_uno.cpp.
+// The nanoBASIC UNO interpreter core is implemented in nano_basic_uno.cpp.
 // This file only provides setup() and loop() for the Arduino framework.
 //
 // GitHub: https://github.com/shachi-lab
@@ -19,5 +19,5 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-	basicMain();
+  basicMain();
 }

@@ -24,6 +24,17 @@ The Ctrl-C break behavior is also shown.
 
 ---
 
+## CLI version
+
+A command-line (CLI) version of **nanoBASIC UNO** is available.
+
+You can try nanoBASIC UNO without an actual Arduino UNO board.
+The CLI version can be built on Windows and Linux.
+
+See the `cli/` directory for details.
+
+---
+
 ## ✨ Features
 
 * **Minimal BASIC interpreter architecture**

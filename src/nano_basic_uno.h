@@ -1,12 +1,12 @@
 /*
- * NanoBASIC UNO - Public API for Arduino Sketch
+ * nanoBASIC UNO - Public API for Arduino Sketch
  * ------------------------------------------------
  * Declares the minimal interface used by the
- * Arduino .ino file to start the NanoBASIC
+ * Arduino .ino file to start the nanoBASIC
  * interpreter on Arduino UNO.
  *
  * This header exposes:
- *   - basicInit()  : Initialize NanoBASIC engine
+ *   - basicInit()  : Initialize nanoBASIC engine
  *   - basicMain()  : Process input and execute BASIC
  *
  * Internal language definitions are in nano_basic_defs.h,

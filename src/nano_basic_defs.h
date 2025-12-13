@@ -1,8 +1,8 @@
 /*
- * NanoBASIC - Core Language Definitions
+ * nanoBASIC - Core Language Definitions
  * --------------------------------------------
  * Platform-independent definitions used by the
- * NanoBASIC interpreter engine.
+ * nanoBASIC interpreter engine.
  *
  * This header provides:
  *   - Statement and token IDs
@@ -11,7 +11,7 @@
  *   - Stack structures for FOR/NEXT loops
  *
  * These definitions form the core specification
- * of the NanoBASIC language and remain common
+ * of the nanoBASIC language and remain common
  * across all platforms (UNO, ESP32, ARM, etc.).
  *
  * Only the BIOS layer is platform-dependent.
@@ -30,6 +30,7 @@ enum {
   ASCII_CR      = 0x0d,
   ASCII_LF      = 0x0a,
   ASCII_BS      = 0x08,
+  ASCII_DEL     = 0x7f,
   ASCII_NUL     = 0x00,
 } ascii_code_e;
 

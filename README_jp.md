@@ -26,6 +26,16 @@ Ctrl-C によるブレーク動作も確認できます。
 
 ---
 
+### CLI バージョン
+
+nanoBASIC UNO のコマンドライン (CLI) バージョンが利用可能です。  
+
+Arduino UNO ボードがなくても、nanoBASIC UNO を試せます。  
+CLI 版は Windows と Linux でビルドすることができます。  
+詳細は cli/ ディレクトリを参照してください。
+
+---
+
 ## ✨機能
 
 - **ミニマル構造の BASIC インタプリタ**

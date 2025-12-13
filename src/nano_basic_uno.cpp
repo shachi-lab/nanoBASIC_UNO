@@ -1,5 +1,5 @@
 /*
- * NanoBASIC UNO
+ * nanoBASIC UNO
  * ------------------------------------------
  * A minimal BASIC interpreter for 8-bit AVR.
  *
@@ -23,18 +23,35 @@
  * License: MIT
  */
 
-#include <Arduino.h>
+#ifndef ARDUINO
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <stdint.h>
+  #include <string.h>
+  #include <ctype.h>
+
+  #define PROGMEM
+  typedef char __FlashStringHelper;
+  typedef const char* PGM_P;
+  #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+  #define pgm_read_ptr(addr)  (*(const void **)(addr))
+  #define FPSTR(x) (x)
+  #define F(x)     (x)
+#else
+  #include <Arduino.h>
+
+  #ifndef FPSTR
+    #define FPSTR(pstr_pointer) (reinterpret_cast<const __FlashStringHelper *>(pstr_pointer))
+  #endif
+#endif
+
 #include "nano_basic_uno.h"
 #include "nano_basic_uno_conf.h"
 #include "nano_basic_defs.h"
 #include "bios_uno.h"
 
-#define inputChar()       bios_serialGetChar()
-#define printChar(c)      bios_serialPutChar((char)c)
-
-#ifndef FPSTR
-#define FPSTR(pstr_pointer) (reinterpret_cast<const __FlashStringHelper *>(pstr_pointer))
-#endif
+#define inputChar()       bios_consoleGetChar()
+#define printChar(c)      bios_consolePutChar((char)c)
 
 char RawLine[RAW_LINE_SIZE];
 uint8_t InternalcodeLine[CODE_LINE_SIZE];
@@ -112,7 +129,7 @@ void printError( void );
 void executeBreak( void );
 uint8_t checkST( uint8_t ch );
 uint8_t checkDelimiter( void );
-uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, uint16_t *lnum );
+uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, int16_t *lnum );
 int8_t checkBreakKey( void );
 error_code_t delayMs( int16_t val );
 int8_t progLoad( void );
@@ -387,7 +404,7 @@ void interpreterMain( void )
 
   while( true ){
 #if CODE_DEBUG_ENABLE
-      printInternalcode();
+    printInternalcode();
 #endif
     ch = *executionPointer++;
     if( ch == ST_EOL || returnRequest == REQUEST_EXIT ){
@@ -465,19 +482,26 @@ char *inputString( void )
       return NULL;
     case ASCII_CR :
       str[len] = 0;
+#ifndef CLI_NO_ECHO
       printChar( ch );
       printChar( ASCII_LF );
+#endif
       return RawLine;
     case ASCII_BS :
+    case ASCII_DEL :
       if( len > 0 ){
         len--;
+#ifndef CLI_NO_ECHO
         printChar( ASCII_BS );
+#endif
       }
       break;
     default :
       if( ch >= 0x20 && len < RAW_LINE_SIZE ){
         str[len++] = (char)ch;
-        printChar( ch );
+#ifndef CLI_NO_ECHO
+        printChar(ch);
+#endif
       }
     }
   }
@@ -872,7 +896,7 @@ static char *get_StringPara_Form( uint8_t fm )
   if ( *executionPointer == ',' )
   {
     executionPointer++;
-    len = expr();
+    len = (uint8_t)expr();
   }
   if ( checkST( ')' ) ) return NULL;
   return conv2str( val, fm, len );
@@ -881,7 +905,7 @@ static char *get_StringPara_Form( uint8_t fm )
 //*************************************************
 void proc_print( void )
 {
-  uint8_t ch, lastChar, *ptr, len, fm;
+  uint8_t ch, lastChar;
   int16_t val;
   char *p;
 
@@ -1259,6 +1283,7 @@ void proc_endif( void )
 void programRun( void )
 { 
   initializeValiables();
+  errorCode = ERROR_NONE;
   lineNumber = 1;
   executionPointer = (uint8_t*)PROGRAM_AREA_TOP;
   returnRequest = REQUEST_GOTO;
@@ -1301,8 +1326,6 @@ void proc_end( void )
 //*************************************************
 void proc_new( void )
 {
-  uint8_t *ptr;
-
   if( checkDelimiter() ) return;
   initializeValiables();
   programNew();
@@ -1431,7 +1454,7 @@ void proc_save( void )
   }
 
   if( flag == VAL_ZERO ){
-    eepEraseBlock( EEP_HEADER_ADDR, EEP_HEADER_SIZE + PROGRAM_AREA_SIZE );
+    bios_eepEraseBlock( EEP_HEADER_ADDR, EEP_HEADER_SIZE + PROGRAM_AREA_SIZE );
     return;
   }
 
@@ -1450,15 +1473,15 @@ void proc_save( void )
   eep.autoRun = (flag == '!');
   eep.reserved = 0x00;
 
-  eepWriteBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
-  eepWriteBlock( EEP_PROGRAM_ADDR, ptr,  (uint16_t)progLength );
+  bios_eepWriteBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
+  bios_eepWriteBlock( EEP_PROGRAM_ADDR, ptr,  (uint16_t)progLength );
 }
 
 //*************************************************
 int8_t progLoad( void )
 {
   EEP_Header_t eep;
-  eepReadBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
+  bios_eepReadBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
   if (eep.magic1 != EEP_MAGIC_1 || eep.magic2 != EEP_MAGIC_2 ) {
     return -1;
   }
@@ -1466,7 +1489,7 @@ int8_t progLoad( void )
     return 0;
   }
   progLength = eep.progLength;
-  eepReadBlock( EEP_PROGRAM_ADDR, PROGRAM_AREA_TOP, (uint16_t)progLength );
+  bios_eepReadBlock( EEP_PROGRAM_ADDR, PROGRAM_AREA_TOP, (uint16_t)progLength );
   if( eep.autoRun ) return 2;
   return 1;
 }
@@ -1511,9 +1534,12 @@ void proc_outp( void )
 //*************************************************
 error_code_t delayMs( int16_t val )
 {
-  bios_setWaitTick( val );
-  while( bios_getWaitTick() > 0 ){
-    if( checkBreakKey() < 0 ) break;
+
+  int16_t waitStart = bios_getSystemTick();
+
+  while( checkBreakKey() >= 0 ) {
+    int16_t elapsed = bios_getSystemTick() - waitStart;
+    if( elapsed > val ) break;
   }
   return errorCode;
 }
@@ -1747,7 +1773,7 @@ int16_t calcValue( void )
   case '-':
     return -calcValue();
   case '!' :
-    return !calcValue();
+    return calcValue() == 0;
   case '~' :
     return ~calcValue();
   case FUNC_RND :
