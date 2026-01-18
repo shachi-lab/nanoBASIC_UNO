@@ -26,26 +26,27 @@
  * with the same function interface.
  *
  * GitHub: https://github.com/shachi-lab
- * Copyright (c) 2025 shachi-lab
+ * Copyright (c) 2025-2026 shachi-lab
  * License: MIT
  */
 
 #include <Arduino.h>
+#include "nano_basic_defs.h"
 #include "bios_uno.h"
 
-#define	BIOS_SELIAR_BAUDRATE		115200
+#define BIOS_SELIAR_BAUDRATE        115200
 
-static void bios_consoleInit( void );
-static void bios_systemTickInit( void );
-static void bios_eepInit( void );
-static void bios_polling( void );
+static void bios_consoleInit(void);
+static void bios_systemTickInit(void);
+static void bios_eepInit(void);
+static void bios_polling(void);
 
 //*************************************************
 void bios_init(void)
 {
   bios_consoleInit();
   bios_systemTickInit();
-  bios_randomize( 0 );
+  bios_randomize(0);
   bios_eepInit();
 }
 
@@ -53,21 +54,21 @@ void bios_init(void)
 //    Character input/output
 //*************************************************
 //*************************************************
-static void bios_consoleInit( void )
+static void bios_consoleInit(void)
 {
-  Serial.begin( BIOS_SELIAR_BAUDRATE );
+  Serial.begin(BIOS_SELIAR_BAUDRATE);
 }
 
 //*************************************************
-void bios_consolePutChar( char ch )
+void bios_consolePutChar(char ch)
 {
-  Serial.write( ch );
+  Serial.write(ch);
 }
 
 //*************************************************
-int16_t bios_consoleGetChar( void )
+int16_t bios_consoleGetChar(void)
 {
-	bios_polling();
+    bios_polling();
   return (int16_t)Serial.read();
 }
 
@@ -75,46 +76,46 @@ int16_t bios_consoleGetChar( void )
 //    Timing utilities
 //*************************************************
 //*************************************************
-static void bios_systemTickInit( void )
+static void bios_systemTickInit(void)
 {
 }
 
 //*************************************************
-int16_t bios_getSystemTick( void )
+nb_int_t bios_getSystemTick(void)
 {
-  return (uint16_t)millis();
+  return (nb_int_t)millis();
 }
 
 //*************************************************
 //    Random number
 //*************************************************
 //*************************************************
-void bios_randomize( int16_t val )
+void bios_randomize(nb_int_t val)
 {
-  if( val == 0 ) {
-    randomSeed( analogRead(A0) ^ micros() );
+  if(val == 0) {
+    randomSeed(analogRead(A0) ^ micros());
   } else {
-    randomSeed( val );
+    randomSeed(val);
   }
 }
 
 //*************************************************
-int16_t bios_rand( int16_t val )
+nb_int_t bios_rand(nb_int_t val)
 {
-  return ((int16_t)random()) % val;
+  return ((nb_int_t)random()) % val;
 }
 
 //*************************************************
 //    GPIO, ADC, PWM
 //*************************************************
 //*************************************************
-int16_t bios_writeGpio( int16_t pin, int16_t value )
+int8_t bios_writeGpio(nb_int_t pin, nb_int_t value)
 {
   if(pin < 0 || pin > 19) {
     return -1;
   }
   // D0〜D7 : PORTD
-  if(pin <= 7){
+  if (pin <= 7){
       DDRD |= (1 << pin);
       if(value) PORTD |= (1 << pin);
       else      PORTD &= ~(1 << pin);
@@ -137,14 +138,14 @@ int16_t bios_writeGpio( int16_t pin, int16_t value )
 }
 
 //*************************************************
-int16_t bios_readGpio( int16_t pin )
+int8_t bios_readGpio(nb_int_t pin)
 {
-  if(pin < 0 || pin > 19) {
+  if (pin < 0 || pin > 19) {
     return -1;
   }
-  if(pin >= 14 && pin <= 19) return -1; 
+  if (pin >= 14 && pin <= 19) return -1; 
 
-  if(pin <= 7) {
+  if (pin <= 7) {
       return (PIND >> pin) & 1;
   } else if(pin <= 13) {
       return (PINB >> (pin - 8)) & 1;
@@ -155,10 +156,10 @@ int16_t bios_readGpio( int16_t pin )
 }
 
 //*************************************************
-int16_t bios_readAdc( int16_t ch )
+int16_t bios_readAdc(nb_int_t ch)
 {
   // ch : 0〜5（A0〜A5）
-  if(ch < 0 || ch > 5) {
+  if (ch < 0 || ch > 5) {
     return -1;
   }
   ADMUX = (1 << REFS0) | (ch & 0x07);
@@ -171,13 +172,13 @@ int16_t bios_readAdc( int16_t ch )
 }
 
 //*************************************************
-int16_t bios_setPwm( int16_t pin, int16_t value )
+int8_t bios_setPwm(nb_int_t pin, nb_int_t value)
 {
-  if( pin != 3 && pin != 5 && pin != 6 && pin != 9 && pin != 10 && pin != 11 ) {
+  if (pin != 3 && pin != 5 && pin != 6 && pin != 9 && pin != 10 && pin != 11) {
     return -1;
   }
-  if(value < 0) value = 0;
-  if(value > 255) value = 255;
+  if (value < 0) value = 0;
+  if (value > 255) value = 255;
   analogWrite(pin, value);
   return 0;
 }
@@ -187,7 +188,7 @@ int16_t bios_setPwm( int16_t pin, int16_t value )
 //*************************************************
 #include <avr/wdt.h>
 //*************************************************
-void bios_systemReset( void )
+void bios_systemReset(void)
 {
   wdt_enable(WDTO_15MS);
   while (1) {}
@@ -198,12 +199,12 @@ void bios_systemReset( void )
 //*************************************************
 #include <EEPROM.h>
 //*************************************************
-static void bios_eepInit( void )
+static void bios_eepInit(void)
 {
 }
 
 //*************************************************
-void bios_eepEraseBlock( uint16_t addr, uint16_t len )
+void bios_eepEraseBlock(uint16_t addr, uint16_t len)
 {
   for (uint16_t i = 0; i < len; i++) {
     EEPROM.update(addr + i, 0xff);
@@ -211,7 +212,7 @@ void bios_eepEraseBlock( uint16_t addr, uint16_t len )
 }
 
 //*************************************************
-void bios_eepWriteBlock( uint16_t addr, const uint8_t* buf, uint16_t len )
+void bios_eepWriteBlock(uint16_t addr, const uint8_t* buf, uint16_t len)
 {
   for (uint16_t i = 0; i < len; i++) {
     EEPROM.update(addr + i, buf[i]);
@@ -219,7 +220,7 @@ void bios_eepWriteBlock( uint16_t addr, const uint8_t* buf, uint16_t len )
 }
 
 //*************************************************
-void bios_eepReadBlock( uint16_t addr, uint8_t* buf, uint16_t len )
+void bios_eepReadBlock(uint16_t addr, uint8_t* buf, uint16_t len)
 {
   for (uint16_t i = 0; i < len; i++) {
     buf[i] = EEPROM.read(addr + i);
@@ -237,7 +238,7 @@ void bios_eepReadBlock( uint16_t addr, uint8_t* buf, uint16_t len )
  *
  * Do NOT put language logic or execution control here.
  */
-static void bios_polling( void )
+static void bios_polling(void)
 {
   // reserved for future use
 }

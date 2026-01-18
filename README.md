@@ -50,6 +50,11 @@ See the `cli/` directory for details.
   **+= / -= / <<= / >>= / && / ||**
 * **SAVE / LOAD** to store and load programs,  
   with support for **AutoRun**
+* **16-bit / 32-bit integer support**  
+  (build-time selectable)
+* **REPL line editing and command history**
+* **UTF-8 support** for comments and strings
+* **C-style string escape sequences**
 * Hardware-dependent components are isolated in a
   **BIOS layer (bios_uno.cpp)**
 * Clean, portable header structure
@@ -69,8 +74,21 @@ Start here if you want to run nanoBASIC UNO immediately.
 
 ---
 
+## 🧪 Sample programs
+
+Sample programs are included for hands-on learning.  
+Just copy, paste, and run them.
+For details, see the sample programs here:  
+
+* **Sample programs (English)**  
+  [docs/nano_basic_samples_en.md](docs/nano_basic_samples_en.md)
+* **サンプルプログラム (日本語版)**   
+  [docs/nano_basic_samples_jp.md](docs/nano_basic_samples_jp.md)
+
+---
+
 ## 📘 Documentation
-- **Reference Manual (EN)**  
+- **Reference Manual (English)**  
   → [docs/nanoBASIC_UNO_Reference_Manual_en.md](docs/nanoBASIC_UNO_Reference_Manual_en.md)
 
 - **リファレンスマニュアル（日本語版）**  
@@ -82,11 +100,18 @@ Start here if you want to run nanoBASIC UNO immediately.
 
 ```
 / (project root)
+├── cli
+|    ├── bios_uno_cli.cpp       # Windows/Linux hardware layer API
+|    ├── main.cpp               # Windows/Linux entry point
+|    ├── README.mdnanoBASIC_UNO_Reference_Manual_en
+|    └── README_jp.md
 ├── docs
 |    ├── QuickStart_en.md
 |    ├── QuickStart_jp.md
 |    ├── nanoBASIC_UNO_Reference_Manual_en.md
-|    └── nanoBASIC_UNO_Reference_Manual_ja.md
+|    ├── nanoBASIC_UNO_Reference_Manual_jp.md
+|    ├── nano_basic_samples_en.md.md
+|    └── nano_basic_samples_jp.md.md
 ├── examples
 |    └── ...
 ├── src
@@ -153,6 +178,9 @@ On MCUs where Flash and RAM share a unified address space
 * Remove `pgm_read_byte()`
 * Abstract string access similar to the BIOS layer
 
+nanoBASIC is designed to work correctly even on MCUs  
+that do not support unaligned pointer access.  
+
 Except for AVR-specific string storage,
 the NanoBASIC core is largely platform-independent.
 
@@ -176,7 +204,7 @@ Configure the serial monitor as follows:
 Startup message:
 
 ```
-nanoBASIC UNO Ver 0.15
+nanoBASIC UNO Ver 0.18
 OK
 ```
 
@@ -279,12 +307,12 @@ For example, `PRINT`, `print`, and `PrInT` are treated the same.
 | INP()    | Digital input  |
 | ADC()    | Analog input   |
 | RND()    | Random number  |
+| INKEY()  | Serial input buffer |
 
 ### Special Variables
 | Valiable | Meaning             |
 | -------- | ------------------- |
 | TICK     | System time (ms)    |
-| INKEY    | Serial input buffer |
 
 ### 🔣 Operators
 | Operator                 | Meaning               |
@@ -301,13 +329,14 @@ Parentheses override standard operator precedence.
 
 ### Numbers
 nanoBASIC uses **16-bit signed integers** (-32768 to 32767).  
+Depending on the build configuration, nanoBASIC can also be built to use 32-bit integers.  
 No floating-point support.  
 Overflow is not checked.  
 * Default: decimal
-* `$xxxx`: hexadecimal
+* `0x1234`: hexadecimal
 ```
 A=10
-B=$BEEF
+B=0xBEEF
 ```
 
 ### Variables
@@ -343,9 +372,11 @@ They may appear **only directly after a variable**.
 
 ### Strings
 Strings may be used **only inside PRINT (or '?')**.
+C-style escape sequences and UTF-8 characters are supported in strings.
 ```
-? "Hello!"
+PRINT "Hello!\n"
 Hello!
+
 OK
 A=5:? "A="A*2
 A=10

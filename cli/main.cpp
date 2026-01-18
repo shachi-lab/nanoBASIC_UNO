@@ -6,7 +6,7 @@
  * and all language logic is handled by the nanoBASIC_UNO core.
  *
  * GitHub: https://github.com/shachi-lab
- * Copyright (c) 2025 shachi-lab
+ * Copyright (c) 2025-2026 shachi-lab
  * License: MIT
  */
 

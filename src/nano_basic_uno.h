@@ -13,11 +13,11 @@
  * and hardware-dependent routines are implemented in
  * bios_uno.cpp/.h.
  *
- * This file is intentionally minimal — it provides only
+ * This file is intentionally minimal - it provides only
  * the entry points required by the Arduino framework.
  *
  * GitHub: https://github.com/shachi-lab
- * Copyright (c) 2025 shachi-lab
+ * Copyright (c) 2025-2026 shachi-lab
  * License: MIT
  */
 

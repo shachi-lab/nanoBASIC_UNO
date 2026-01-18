@@ -24,7 +24,7 @@
  * that matches this interface.
  *
  * GitHub: https://github.com/shachi-lab
- * Copyright (c) 2025 shachi-lab
+ * Copyright (c) 2025-2026 shachi-lab
  * License: MIT
  */
 
@@ -39,17 +39,17 @@ void bios_consolePutChar( char ch );
 int16_t bios_consoleGetChar( void );
 
 // Timing utilities
-int16_t bios_getSystemTick( void );
+nb_int_t bios_getSystemTick( void );
 
 // Random number
-void bios_randomize( int16_t val );
-int16_t bios_rand( int16_t val );
+void bios_randomize( nb_int_t val );
+nb_int_t bios_rand( nb_int_t val );
 
 // GPIO, ADC, PWM
-int16_t bios_writeGpio( int16_t pin, int16_t value );
-int16_t bios_readGpio( int16_t pin );
-int16_t bios_readAdc( int16_t ch );
-int16_t bios_setPwm( int16_t pin, int16_t value );
+int8_t bios_writeGpio( nb_int_t pin, nb_int_t value );
+int8_t bios_readGpio( nb_int_t pin );
+int16_t bios_readAdc( nb_int_t ch );
+int8_t bios_setPwm( nb_int_t pin, nb_int_t value );
 
 // System reset
 void bios_systemReset( void );

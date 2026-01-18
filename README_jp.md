@@ -48,6 +48,10 @@ CLI 版は Windows と Linux でビルドすることができます。
 - **DATA / READ / RESTORE** などクラシック BASIC の基本機能を搭載
 - **+= / -= / <<= / >>= / && / ||** など現代風の演算子にも対応  
 - **SAVE / LOAD** でプログラムの保存と読み込み、自動実行に対応
+- **16bit / 32bit 整数対応**（ビルド時切り替え）
+- **REPL 編集・履歴機能**
+- **UTF-8 対応**（コメント・文字列）
+- **C 言語風文字列エスケープ**
 - プラットフォーム依存部は **BIOS 層（bios_uno.cpp）** に完全分離
 - 移植性を重視したヘッダ構造
 - MIT License
@@ -66,6 +70,19 @@ CLI 版は Windows と Linux でビルドすることができます。
 
 ---
 
+## 🧪 サンプルプログラム
+
+サンプルプログラムを用意しています。  
+コピーして貼り付け、そのまま実行して試してみてください。  
+詳しくは、以下のサンプル集をご覧ください。
+
+* **サンプルプログラム (日本語版)**   
+  [docs/nano_basic_samples_jp.md](docs/nano_basic_samples_jp.md)
+* **Sample programs (English)**  
+  [docs/nano_basic_samples_en.md](docs/nano_basic_samples_en.md)
+
+---
+
 ## 📘ドキュメント
 
 - **リファレンスマニュアル（日本語版）**  
@@ -80,11 +97,18 @@ CLI 版は Windows と Linux でビルドすることができます。
 
 ```
 / (project root)
+├── cli
+|    ├── bios_uno_cli.cpp       # Windows/Linux 依存の ハードウェア層
+|    ├── main.cpp               # Windows/Linux 用 エントリーポイント
+|    ├── README.md
+|    └── README_jp.md
 ├── docs
 |    ├── QuickStart_en.md
 |    ├── QuickStart_jp.md
 |    ├── nanoBASIC_UNO_Reference_Manual_en.md
-|    └── nanoBASIC_UNO_Reference_Manual_ja.md
+|    ├── nanoBASIC_UNO_Reference_Manual_jp.md
+|    ├── nano_basic_samples_en.md.md
+|    └── nano_basic_samples_jp.md.md
 ├── examples
 |    └── ...
 ├── src
@@ -155,6 +179,9 @@ ESP32 / ARM / RP2040 など Flash と RAM が統合された MCU では
 - PROGMEM 使用部分を RAM 文字列に置き換える。  
 - `pgm_read_byte()` を単純なメモリアクセスに変更する。  
 
+非アラインなメモリアクセスに対応していない MCU でも  
+動作するように設計されています。  
+
 この点を除けば nanoBASIC のコア部分はプラットフォーム非依存であり、  
 移植は比較的容易です。
 
@@ -176,7 +203,7 @@ ESP32 / ARM / RP2040 など Flash と RAM が統合された MCU では
 起動メッセージ：
 
 ```
-nanoBASIC UNO Ver 0.15
+nanoBASIC UNO Ver 0.18
 OK
 ```
 
@@ -270,12 +297,12 @@ RUN
 | INP()    | デジタル入力 |
 | ADC()    | アナログ入力 |
 | RND()    | 乱数       |
+| INKEY()  | シリアル入力 |
 
 ### 特殊変数
 | Valiable | Meaning |
 |----------|---------|
 | TICK | システム時間 |
-| INKEY | シリアル入力 |
 
 
 ### 演算子
@@ -292,14 +319,16 @@ RUN
 カッコで囲まれた内側の演算が優先されます。
 
 ### 数値  
-nanoBASIC の数値はすべて 16bit 整数（-32768〜32767）です。  
+
+nanoBASIC の数値はデフォルトでは 16bit 整数（-32768〜32767）です。  
+(ビルド設定により、32bit 整数に変更することもできます。)
 floatなどの浮動小数点はありません。
 演算によるオーバーフローは考慮しません。  
 指定が無い場合は10進数です。  
-数値に前に '$' をつけると16進数となります。
+数値に前に '0x' をつけると16進数となります。
 ```
 A=10
-B=$BEEF
+B=0xBEEF
 ```
 
 ### 変数
@@ -332,10 +361,13 @@ A++
 ※ 式の中には記述できません。  
 
 ### 文字列
-PRINT（"?"で代用可）コマンド内でのみ、文字列が使用できます。
+PRINT（"?"で代用可）コマンド内でのみ、文字列が使用できます。  
+文字列中では、`\n` などの C 言語風エスケープシーケンスや  
+UTF-8 文字が使用できます。
 ```
-? "Hello!"
+PRINT "Hello!\n"
 Hello!
+
 OK
 A=5:? "A="A*2
 A=10

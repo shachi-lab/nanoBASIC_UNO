@@ -19,7 +19,7 @@
  *   "Modern BASIC for small microcontrollers."
  *
  * GitHub: https://github.com/shachi-lab
- * Copyright (c) 2025 shachi-lab
+ * Copyright (c) 2025-2026 shachi-lab
  * License: MIT
  */
 
@@ -53,101 +53,98 @@
 #define inputChar()       bios_consoleGetChar()
 #define printChar(c)      bios_consolePutChar((char)c)
 
-char RawLine[RAW_LINE_SIZE];
-uint8_t InternalcodeLine[CODE_LINE_SIZE];
-int16_t globalVariables[VARIABLE_NUM];
-int16_t arrayValiables[ARRAY_INDEX_NUM];
-stack_t stacks[STACK_NUM];
-int16_t lineNumber;
-uint8_t *executionPointer;
-error_code_t errorCode;
-uint8_t returnRequest;
-uint8_t stackPointer;
-uint8_t *dataReadPointer;
-uint8_t *resumePointer;
-int16_t resumeLineNumber;
-int16_t progLength;
-int8_t exprDepth;
+static char inputBuff[INPUT_BUFF_SIZE];
+static uint8_t internalcodeBuff[CODE_BUFF_SIZE];
+static nb_int_t globalVariables[VARIABLE_NUM];
+static nb_int_t arrayValiables[ARRAY_INDEX_NUM];
+static stack_t stacks[STACK_NUM];
+static int16_t lineNumber;
+static uint8_t *executionPointer;
+static error_code_t errorCode;
+static uint8_t returnRequest;
+static uint8_t stackPointer;
+static uint8_t exprDepth;
+static uint8_t *dataReadPointer;
+static uint8_t *resumePointer;
+static int16_t resumeLineNumber;
+static int16_t progLength;
+static uint8_t programArea[PROGRAM_AREA_SIZE];
 
-uint8_t programArea[PROGRAM_AREA_SIZE];
 #define PROGRAM_AREA_TOP  programArea
 
-void basicMain( void );
-char *inputString( void );
-uint8_t convertInternalCode( uint8_t *dst, char *src );
-void interpreterMain( void );
+static void proc_print(void);
+static void proc_input(void);
+static void proc_goto(void);
+static void proc_gosub(void);
+static void proc_return(void);
+static void proc_for(void);
+static void proc_next(void);
+static void proc_do(void);
+static void proc_loop(void);
+static void proc_while(void);
+static void proc_if (void);
+static void proc_else(void);
+static void proc_elseif (void);
+static void proc_endif (void);
+static void proc_run(void);
+static void proc_resume(void);
+static void proc_stop(void);
+static void proc_end(void);
+static void proc_new(void);
+static void proc_list(void);
+static void proc_prog(void);
+static void proc_load(void);
+static void proc_save(void);
+static void proc_comment(void);
+static void proc_outp(void);
+static void proc_delay(void);
+static void proc_pause(void);
+static void proc_reset(void);
+static void proc_exit(void);
+static void proc_continue(void);
+static void proc_randomize(void);
+static void proc_data(void);
+static void proc_read(void);
+static void proc_restore(void);
+static void proc_pwm(void);
 
-void proc_print( void );
-void proc_input( void );
-void proc_goto( void );
-void proc_gosub( void );
-void proc_return( void );
-void proc_for( void );
-void proc_next( void );
-void proc_do( void );
-void proc_loop( void );
-void proc_while( void );
-void proc_if( void );
-void proc_else( void );
-void proc_elseif( void );
-void proc_endif( void );
-void proc_run( void );
-void proc_resume( void );
-void proc_stop( void );
-void proc_end( void );
-void proc_new( void );
-void proc_list( void );
-void proc_prog( void );
-void proc_load( void );
-void proc_save( void );
-void proc_comment( void );
-void proc_outp( void );
-void proc_delay( void );
-void proc_pause( void );
-void proc_reset( void );
-void proc_exit( void );
-void proc_continue( void );
-void proc_randomize( void );
-void proc_data( void );
-void proc_read( void );
-void proc_restore( void );
-void proc_pwm( void );
+static void interpreterMain(void);
+static uint8_t inputString(uint8_t history_flag);
+static uint8_t convertInternalCode(uint8_t *dst, char *src);
+static void proc_let(nb_int_t*pvar);
+static void initializeValiables(void);
+static nb_int_t *getArrayReference(void);
+static nb_int_t calcValue(void);
+static nb_int_t expr4th(void);
+static nb_int_t expr3nd(void);
+static nb_int_t expr2nd(void);
+static nb_int_t expr(void);
+static nb_int_t calcValueFunc(void);
+static void printInternalcode(void);
+static void printError(void);
+static void executeBreak(void);
+static error_code_t checkST(uint8_t ch);
+static error_code_t checkDelimiter(void);
+static error_code_t delayMs(nb_int_t val);
+static int16_t checkBreakKey(void);
+static uint8_t* findST(const uint8_t* st_list, int16_t* lnum);
+static int8_t progLoad(void);
+static void programNew(void);
+static void programInit(void);
+static void programRun(void);
+static void printVal(nb_int_t val);
+static void printString(const char *str);
+static void printStringFlash(const __FlashStringHelper* ifsh);
+static void printNewline(void);
+static char *int2str(nb_int_t para, uint8_t ff, int16_t len);
+static uint8_t* get_dec_val(uint8_t* ptr, nb_int_t* val);
+static uint8_t* set_dec_val(uint8_t* ptr, nb_int_t val);
+static uint8_t* get_next_ptr(uint8_t* ptr);
+static uint8_t* findNextLoop(uint8_t* ptr, uint8_t ch);
 
-void proc_let_valiable( int16_t *pvar );
-uint8_t proc_let( int16_t *pvar, uint8_t ope );
+typedef void (*PROC)(void);
 
-int16_t *getArrayReference( void );
-int16_t calcValue( void );
-int16_t expr4th( void );
-int16_t expr3nd( void );
-int16_t expr2nd( void );
-int16_t expr( void );
-void initializeValiables( void );
-int16_t calcValueFunc( void );
-void printInternalcode( void );
-void printError( void );
-void executeBreak( void );
-uint8_t checkST( uint8_t ch );
-uint8_t checkDelimiter( void );
-uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, int16_t *lnum );
-int8_t checkBreakKey( void );
-error_code_t delayMs( int16_t val );
-int8_t progLoad( void );
-void programNew( void );
-void programInit( void );
-void programRun( void );
-
-void printVal( int16_t val );
-void printString( char *str );
-void printStringFlash( const __FlashStringHelper* ifsh );
-
-char *conv2str( int16_t para, uint8_t ff, int8_t len );
-
-const char newlineStr[] PROGMEM = "\r\n";
-
-typedef void (*PROC)( void );
-
-const PROC procCodeList[] = {
+static const PROC procCodeList[] = {
   proc_print    , // 0x80 : ST_PRINT
   proc_input    , // 0x81 : ST_INPUT
   proc_goto     , // 0x82 : ST_GOTO
@@ -184,59 +181,61 @@ const PROC procCodeList[] = {
   proc_endif    , // 0xa1 : ST_ENDIF
 };
 
-const char token_st_80[] PROGMEM = "PRINT"    ; // 0x80 : ST_PRINT
-const char token_st_81[] PROGMEM = "INPUT"    ; // 0x81 : ST_INPUT
-const char token_st_82[] PROGMEM = "GOTO"     ; // 0x82 : ST_GOTO
-const char token_st_83[] PROGMEM = "GOSUB"    ; // 0x83 : ST_GOSUB
-const char token_st_84[] PROGMEM = "RETURN"   ; // 0x84 : ST_RETURN
-const char token_st_85[] PROGMEM = "FOR"      ; // 0x85 : ST_FOR
-const char token_st_86[] PROGMEM = "NEXT"     ; // 0x86 : ST_NEXT
-const char token_st_87[] PROGMEM = "DO"       ; // 0x87 : ST_DO
-const char token_st_88[] PROGMEM = "LOOP"     ; // 0x88 : ST_LOOP
-const char token_st_89[] PROGMEM = "WHILE"    ; // 0x89 : ST_WHILE
-const char token_st_8a[] PROGMEM = "IF"       ; // 0x8a : ST_IF
-const char token_st_8b[] PROGMEM = "RUN"      ; // 0x8b : ST_RUN
-const char token_st_8c[] PROGMEM = "RESUME"   ; // 0x8c : ST_RESUME
-const char token_st_8d[] PROGMEM = "STOP"     ; // 0x8d : ST_STOP
-const char token_st_8e[] PROGMEM = "END"      ; // 0x8e : ST_END
-const char token_st_8f[] PROGMEM = "NEW"      ; // 0x8f : ST_NEW
-const char token_st_90[] PROGMEM = "LIST"     ; // 0x90 : ST_LIST
-const char token_st_91[] PROGMEM = "PROG"     ; // 0x91 : ST_PROG
-const char token_st_92[] PROGMEM = "SAVE"     ; // 0x92 : ST_SAVE
-const char token_st_93[] PROGMEM = "LOAD"     ; // 0x93 : ST_LOAD
-const char token_st_94[] PROGMEM = "DELAY"    ; // 0x94 : ST_DELAY
-const char token_st_95[] PROGMEM = "PAUSE"    ; // 0x95 : ST_PAUSE
-const char token_st_96[] PROGMEM = "RESET"    ; // 0x96 : ST_RESET
-const char token_st_97[] PROGMEM = "EXIT"     ; // 0x97 : ST_EXIT
-const char token_st_98[] PROGMEM = "CONTINUE" ; // 0x98 : ST_CONTINUE
-const char token_st_99[] PROGMEM = "RANDOMIZE"; // 0x99 : ST_RONDOMIZE
-const char token_st_9a[] PROGMEM = "DATA"     ; // 0x9a : ST_DATA
-const char token_st_9b[] PROGMEM = "READ"     ; // 0x9b : ST_READ
-const char token_st_9c[] PROGMEM = "RESTORE"  ; // 0x9c : ST_RESTORE
-const char token_st_9d[] PROGMEM = "OUTP"     ; // 0x9d : ST_OUTP
-const char token_st_9e[] PROGMEM = "PWM"      ; // 0x9e : ST_PWM
-const char token_st_9f[] PROGMEM = "ELSE"     ; // 0x9f : ST_ELSE
-const char token_st_a0[] PROGMEM = "ELSEIF"   ; // 0xa0 : ST_ELSEIF
-const char token_st_a1[] PROGMEM = "ENDIF"    ; // 0xa1 : ST_ENDIF
-const char token_st_a2[] PROGMEM = "THEN"     ; // 0xa2 : ST_THEN
-const char token_st_a3[] PROGMEM = "TO"       ; // 0xa3 : ST_TO
-const char token_st_a4[] PROGMEM = "STEP"     ; // 0xa4 : ST_STEP
-const char token_fn_a5[] PROGMEM = "RND"      ; // 0xa5 : FUNC_RND
-const char token_fn_a6[] PROGMEM = "ABS"      ; // 0xa6 : FUNC_ABS
-const char token_fn_a7[] PROGMEM = "INP"      ; // 0xa7 : FUNC_INP
-const char token_fn_a8[] PROGMEM = "ADC"      ; // 0xa8 : FUNC_ADC
-const char token_fn_a9[] PROGMEM = "CHR"      ; // 0xa9 : FUNC_CHR
-const char token_va_aa[] PROGMEM = "TICK"     ; // 0xaa : VAL_TICK
-const char token_va_ab[] PROGMEM = "INKEY"    ; // 0xab : VAL_INKEY
+const char token_st_80[] PROGMEM = "Print"    ; // 0x80 : ST_PRINT
+const char token_st_81[] PROGMEM = "Input"    ; // 0x81 : ST_INPUT
+const char token_st_82[] PROGMEM = "Goto"     ; // 0x82 : ST_GOTO
+const char token_st_83[] PROGMEM = "Gosub"    ; // 0x83 : ST_GOSUB
+const char token_st_84[] PROGMEM = "Return"   ; // 0x84 : ST_RETURN
+const char token_st_85[] PROGMEM = "For"      ; // 0x85 : ST_FOR
+const char token_st_86[] PROGMEM = "Next"     ; // 0x86 : ST_NEXT
+const char token_st_87[] PROGMEM = "Do"       ; // 0x87 : ST_DO
+const char token_st_88[] PROGMEM = "Loop"     ; // 0x88 : ST_LOOP
+const char token_st_89[] PROGMEM = "While"    ; // 0x89 : ST_WHILE
+const char token_st_8a[] PROGMEM = "If"       ; // 0x8a : ST_IF
+const char token_st_8b[] PROGMEM = "Run"      ; // 0x8b : ST_RUN
+const char token_st_8c[] PROGMEM = "Resume"   ; // 0x8c : ST_RESUME
+const char token_st_8d[] PROGMEM = "Stop"     ; // 0x8d : ST_STOP
+const char token_st_8e[] PROGMEM = "End"      ; // 0x8e : ST_END
+const char token_st_8f[] PROGMEM = "New"      ; // 0x8f : ST_NEW
+const char token_st_90[] PROGMEM = "List"     ; // 0x90 : ST_LIST
+const char token_st_91[] PROGMEM = "Prog"     ; // 0x91 : ST_PROG
+const char token_st_92[] PROGMEM = "Save"     ; // 0x92 : ST_SAVE
+const char token_st_93[] PROGMEM = "Load"     ; // 0x93 : ST_LOAD
+const char token_st_94[] PROGMEM = "Delay"    ; // 0x94 : ST_DELAY
+const char token_st_95[] PROGMEM = "Pause"    ; // 0x95 : ST_PAUSE
+const char token_st_96[] PROGMEM = "Reset"    ; // 0x96 : ST_RESET
+const char token_st_97[] PROGMEM = "Exit"     ; // 0x97 : ST_EXIT
+const char token_st_98[] PROGMEM = "Continue" ; // 0x98 : ST_CONTINUE
+const char token_st_99[] PROGMEM = "Randomize"; // 0x99 : ST_RONDOMIZE
+const char token_st_9a[] PROGMEM = "Data"     ; // 0x9a : ST_DATA
+const char token_st_9b[] PROGMEM = "Read"     ; // 0x9b : ST_READ
+const char token_st_9c[] PROGMEM = "Restore"  ; // 0x9c : ST_RESTORE
+const char token_st_9d[] PROGMEM = "Outp"     ; // 0x9d : ST_OUTP
+const char token_st_9e[] PROGMEM = "Pwm"      ; // 0x9e : ST_PWM
+const char token_st_9f[] PROGMEM = "Else"     ; // 0x9f : ST_ELSE
+const char token_st_a0[] PROGMEM = "ElseIf"   ; // 0xa0 : ST_ELSEIF
+const char token_st_a1[] PROGMEM = "EndIf"    ; // 0xa1 : ST_ENDIF
+const char token_st_a2[] PROGMEM = "Then"     ; // 0xa2 : ST_THEN
+const char token_st_a3[] PROGMEM = "To"       ; // 0xa3 : ST_TO
+const char token_st_a4[] PROGMEM = "Step"     ; // 0xa4 : ST_STEP
+const char token_fn_a5[] PROGMEM = "Rnd"      ; // 0xa5 : FUNC_RND
+const char token_fn_a6[] PROGMEM = "Abs"      ; // 0xa6 : FUNC_ABS
+const char token_fn_a7[] PROGMEM = "Inp"      ; // 0xa7 : FUNC_INP
+const char token_fn_a8[] PROGMEM = "Adc"      ; // 0xa8 : FUNC_ADC
+const char token_fn_a9[] PROGMEM = "Inkey"    ; // 0xa9 : VAL_INKEY
+const char token_fn_aa[] PROGMEM = "Chr"      ; // 0xaa : FUNC_CHR
+const char token_fn_ab[] PROGMEM = "Dec"      ; // 0xaa : FUNC_DEC
+const char token_fn_ac[] PROGMEM = "Hex"      ; // 0xab : FUNC_HEX
+const char token_va_ad[] PROGMEM = "Tick"     ; // 0xac : VAL_TICK
 
-const char * const keyWordList[] PROGMEM = {
+static const char * const keyWordList[] PROGMEM = {
   token_st_80, token_st_81, token_st_82, token_st_83, token_st_84, token_st_85, token_st_86, token_st_87,
   token_st_88, token_st_89, token_st_8a, token_st_8b, token_st_8c, token_st_8d, token_st_8e, token_st_8f,
   token_st_90, token_st_91, token_st_92, token_st_93, token_st_94, token_st_95, token_st_96, token_st_97,
   token_st_98, token_st_99, token_st_9a, token_st_9b, token_st_9c, token_st_9d, token_st_9e, token_st_9f,
   token_st_a0, token_st_a1, token_st_a2, token_st_a3, token_st_a4,
-  token_fn_a5, token_fn_a6, token_fn_a7, token_fn_a8, token_fn_a9,
-  token_va_aa, token_va_ab,
+  token_fn_a5, token_fn_a6, token_fn_a7, token_fn_a8, token_fn_a9, token_fn_aa, token_fn_ab, token_fn_ac,
+  token_va_ad,
   NULL
 };
 
@@ -259,29 +258,30 @@ const char error15[] PROGMEM = "Return";              // 15 : ERROR_UXRETURN
 const char error16[] PROGMEM = "Loop";                // 16 : ERROR_UXLOOP
 const char error17[] PROGMEM = "Exit";                // 17 : ERROR_UXEXIT
 const char error18[] PROGMEM = "Continue";            // 18 : ERROR_UXCONTINUE
+const char error19[] PROGMEM = "Read";                // 18 : ERROR_UXREAD
 
-const char * const errorSting[] PROGMEM = {
+static const char * const errorSting[] PROGMEM = {
   error00, error01, error02, error03, error04, error05, error06, error07,
   error08, error09, error10, error11, error12, error13,
-  error14, error15, error16, error17, error18
+  error14, error15, error16, error17, error18, error19
 };
 
-#define IS_VAL(c)           ((c) == ST_DECVAL || (c) == ST_HEXVAL || (c) == VAL_ZERO)
-#define IS_3BYTE_CODE(c)    ((c) == ST_DECVAL || (c) == ST_HEXVAL)
-#define IS_OPERATOR_CHR(c)  ((c) =='+' || (c)=='-' || (c)=='*' || (c)=='/' || (c)=='%' || (c)=='|' || (c)=='&' || (c)=='^')
-#define IS_VALID_CHR(c)     ((c) <0x3f || (c)=='^' || (c)=='|' || (c)=='~' || (c)=='[' || (c)==']')
-#define IS_DELIMITER(c)     ((c) == ':' || (c) == ST_EOL || (c) == ST_ELSE || (c) == ST_ENDIF)
+#define IS_ST_VAL(c)        (((c) & VAL_ST_MASK) == ST_VAL)
+#define IS_ST_VAL_DEC(c)    (((c) & (VAL_ST_MASK | VAL_BASE_MASK)) == ST_VAL_DEC)
+#define IS_VAL(c)           (IS_ST_VAL(c) || ((c) >= '0' && (c) <= '9'))
+#define GET_VAL_SIZE(c)     (((c) & VAL_SIZE_MASK) + 1)
+#define IS_VALID_CHR(c)     ((c)<0x3f || (c)=='^' || (c)=='|' || (c)=='~' || (c)=='[' || (c)==']')
 
 //*************************************************
-void basicInit( void )
+void basicInit(void)
 {
   bios_init();
   initializeValiables();
-  printStringFlash( F( "\r\n" NAME_STR " " VERSION_STR "\r\n") );
+  printStringFlash(F("\r\n" NAME_STR EXT_NAME_STR " " VERSION_STR "\r\n"));
 
-  if( progLoad() == 2 ) {
-    printStringFlash( F("Auto run\r\n") );
-    if( delayMs( AUTORUN_WAIT_TIME ) == ERROR_NONE ){
+  if (progLoad() > 0) {
+    printStringFlash(F("Auto run\r\n"));
+    if (delayMs(AUTORUN_WAIT_TIME) == ERROR_NONE) {
       programRun();
       interpreterMain();
       return;
@@ -292,62 +292,44 @@ void basicInit( void )
 }
 
 //*************************************************
-void basicMain( void )
+void basicMain(void)
 {
   uint8_t len;
 
   errorCode = ERROR_NONE;
   lineNumber = 0;
   returnRequest = 0;
-  printStringFlash( F("OK\r\n") );
-  while( true ){
-    if( inputString() == NULL ){
+  printStringFlash(F("OK\r\n"));
+  while(true) {
+    if (inputString(true) == 0) {
+      if (!errorCode) continue;
       printError();
       return;
     }
-    len = convertInternalCode( InternalcodeLine, RawLine );
-    if( errorCode != ERROR_NONE ){
+    if (inputBuff[0] == '\0') continue;
+    len = convertInternalCode(internalcodeBuff, inputBuff);
+    if (errorCode != ERROR_NONE) {
       printError();
       return;
     }
-    if( len > 1 ){
-      executionPointer = InternalcodeLine;
+    if (len > 1) {
+      executionPointer = internalcodeBuff;
       interpreterMain();
       return;
     }
   }
 }
 
-#if CODE_DEBUG_ENABLE
 //*************************************************
-void printInternalcode( void )
-{
-  uint8_t len, ch, *ptr;
-
-  ptr = executionPointer;
-  len = *ptr;
-  if( len > 0 ){
-    len++;
-    while( len-- ){
-      ch = *ptr++;
-      printString(conv2str( ch, FORM_HEX, -2 ));
-      printChar( 0x20 );
-    }
-    printStringFlash( FPSTR(newlineStr) );
-  }
-}
-#endif
-
-//*************************************************
-void initializeValiables( void )
+static void initializeValiables(void)
 {
   programInit();
-  memset( globalVariables, 0, sizeof(globalVariables));
-  memset( arrayValiables , 0, sizeof(arrayValiables ));
+  memset(globalVariables, 0, sizeof(globalVariables));
+  memset(arrayValiables , 0, sizeof(arrayValiables));
 }
 
 //*************************************************
-void programInit( void )
+static void programInit(void)
 {
   stackPointer = 0;
   resumePointer = NULL;
@@ -356,111 +338,142 @@ void programInit( void )
 }
 
 //*************************************************
-void programNew( void )
+static void programNew(void)
 {
   progLength = 0;
   *((uint8_t*)PROGRAM_AREA_TOP) = ST_EOL;
 }
 
 //*************************************************
-void printError( void )
+static void printError(void)
 {
-  if( errorCode != ERROR_NONE ){
-    if( errorCode == ERROR_BREAK ){
-      printStringFlash( F("\r\nBreak") );
-    }else{
-      printStringFlash( FPSTR(newlineStr) );
-      if( errorCode >= ERROR_UXNEXT ){
-        printStringFlash( F("Unexpected ") );
-      }
-      if(errorCode > ERROR_CODE_MAX) errorCode = ERROR_SYNTAX;
-      PGM_P p = (PGM_P)pgm_read_ptr(&errorSting[errorCode]);
-      printStringFlash( FPSTR(p) );
-      printStringFlash( F(" error") );
+  if (errorCode != ERROR_NONE) {
+    if (errorCode == ERROR_BREAK) {
+      printStringFlash(F("\r\nBreak"));
     }
-    if( lineNumber ){
-      printStringFlash( F(" in ") );
-      printVal( lineNumber );
+    else{
+      printNewline();
+      if (errorCode >= ERROR_UXNEXT) {
+        printStringFlash(F("Unexpected "));
+      }
+      if (errorCode > ERROR_CODE_MAX) errorCode = ERROR_SYNTAX;
+      PGM_P p = (PGM_P)pgm_read_ptr(&errorSting[errorCode]);
+      printStringFlash(FPSTR(p));
+      printStringFlash(F(" error"));
+    }
+    if (lineNumber) {
+      printStringFlash(F(" in "));
+      printVal(lineNumber);
     }
   }
-    printStringFlash( FPSTR(newlineStr) );
+  printNewline();
 }
 
 //*************************************************
-void executeBreak( void )
+static void executeBreak(void)
 {
-  if( lineNumber ){
+  if (lineNumber) {
     resumePointer = executionPointer;
     resumeLineNumber = lineNumber;
   }
   errorCode = ERROR_BREAK;
 }
 
+#if CODE_DEBUG_ENABLE
 //*************************************************
-void interpreterMain( void )
+static void printInternalcode(void)
+{
+  uint8_t len, ch, *ptr;
+
+  ptr = executionPointer;
+  len = *ptr;
+  if (len > 0) {
+    len++;
+    while(len--) {
+      ch = *ptr++;
+      printString(int2str(ch, FORM_HEX, -2));
+      printChar(ASCII_SP);
+    }
+    printNewline();
+  }
+}
+#endif
+
+//*************************************************
+static void interpreterMain(void)
 {
   uint8_t ch;
-  int16_t *pvar;
+  nb_int_t *pvar;
 
-  while( true ){
+  while(true) {
 #if CODE_DEBUG_ENABLE
     printInternalcode();
 #endif
     ch = *executionPointer++;
-    if( ch == ST_EOL || returnRequest == REQUEST_EXIT ){
-      if( lineNumber ){
+    if (ch == ST_EOL || returnRequest == REQUEST_END) {
+      if (lineNumber) {
         programInit();
       }
       return;
     }
-    ch = *executionPointer;
-    if( ch == ST_DECVAL && lineNumber ){
-      executionPointer += 3;
+    if (lineNumber) {
+      ch = *executionPointer;
+	  if (ch >= '0' && ch <= '9') executionPointer++;
+      else
+      if (IS_ST_VAL_DEC(ch)) {
+        executionPointer += GET_VAL_SIZE(ch) + 1;
+      }
     }
-    while( true ) {
-      if( checkBreakKey() < 0 ){
+    while(true) {
+      if (checkBreakKey() < 0) {
         printError();
         return;
       }
       exprDepth = 0;
       returnRequest = 0;
       ch = *executionPointer++;
-      if( ch == ST_EOL ){
-        if( lineNumber == 0 ){
+      if (ch == ST_EOL) {
+        if (lineNumber == 0) {
           return;
         }
         lineNumber++;
         break;
-      } else
-      if( ch == ' ' || ch == '\t' || ch == ':' ) {
+      }
+      else
+      if (ch == ' ' || ch == '\t' || ch == ':') {
         /* nop */
-      } else
-      if( ch == ST_ARRAY ) {
+      }
+      else
+      if (ch == ST_ARRAY) {
         pvar = getArrayReference();
-        if( pvar == NULL ) {
+        if (pvar == NULL) {
           printError();
           return;
         }
-        proc_let_valiable( pvar );
-      } else
-      if( isupper( ch ) ){
+        proc_let(pvar);
+      }
+      else
+      if (isupper(ch)) {
         ch -= 'A';
-        proc_let_valiable( &globalVariables[ch] );
-      } else
-      if( ch == ST_COMMENT ){
+        proc_let(&globalVariables[ch]);
+      }
+      else
+      if (ch == ST_COMMENT) {
         proc_comment();
-      } else
-      if( ch >= STCODE_START && ch <= STCODE_END ) {
+      }
+      else
+      if (ch >= STCODE_START && ch <= STCODE_END) {
         ch -= STCODE_START;
         (*procCodeList[ch])();
-      } else {
+      }
+      else {
         errorCode = ERROR_SYNTAX;
       }
-      if( errorCode != ERROR_NONE ){
+      if (errorCode != ERROR_NONE) {
         printError();
         return;
       }
-      if( returnRequest ){
+      if (returnRequest) {
         break;
       }
     }
@@ -468,321 +481,539 @@ void interpreterMain( void )
 }
 
 //*************************************************
-char *inputString( void )
-{
-  char *str;
-  uint8_t len = 0;
+#if REPL_EDIT_ENABLE
+#define CSI_SEQ     "\x1b["
+#define CSI_CUF     CSI_SEQ "C"
+#define CSI_CUB     CSI_SEQ "D"
+#define CSI_ED      CSI_SEQ "J"
+#define CSI_SCP     CSI_SEQ "s"
+#define CSI_RCP     CSI_SEQ "u"
 
-  str = RawLine;
-  while( true ) {
-    int16_t ch = inputChar();
-    switch( ch ){
-    case CHR_BREAK :
+#if REPL_HISTORY_ENABLE
+#define HISTOTY_BUFF_SIZE	INPUT_BUFF_SIZE
+static char historyBuff[HISTOTY_BUFF_SIZE] = "";
+#endif
+#endif
+	
+//*************************************************
+static uint8_t get_utf8_bytes(uint8_t ch)
+{
+  uint8_t c = (uint8_t)ch;
+  if (c < 0b10000000) return 1;  // ASCII character (1 byte)
+  if (c < 0b11000000) return 0;  // UTF-8 continuation byte
+  if (c < 0b11100000) return 2;  // Start of a 2-byte UTF-8 character
+  if (c < 0b11110000) return 3;  // Start of a 3-byte UTF-8 character
+  if (c < 0b11111000) return 4;  // Start of a 4-byte UTF-8 character
+  if (c < 0b11111100) return 5;  // Start of a 5-byte UTF-8 character
+  return 6;                       // Start of a 6-byte UTF-8 character
+}
+
+//*************************************************
+static uint8_t get_utf8_last_len(char* ptr)
+{
+  uint8_t n;
+  while ((n = get_utf8_bytes(*ptr--)) == 0);
+  return n;
+}
+
+//*************************************************
+static uint8_t inputStringCSI(char* ptr, const char* str)
+{
+  uint8_t n = get_utf8_last_len(ptr);
+  printString(str);
+  if (n > 1) printString(str);
+  return n;
+}
+
+#if REPL_EDIT_ENABLE
+//*************************************************
+static uint8_t get_utf8_len(char* ptr)
+{
+  uint8_t n;
+  while ((n = get_utf8_bytes(*ptr++)) == 0);
+  return n;
+}
+
+//*************************************************
+static uint8_t inputStringRight(char* buff, uint8_t pos)
+{
+  uint8_t n = inputStringCSI(&buff[pos], CSI_CUF);
+  return pos + n;
+}
+#endif
+
+//*************************************************
+static uint8_t inputStringLeft(char* buff, uint8_t pos)
+{
+  if (!pos) return pos;
+  uint8_t n = inputStringCSI(&buff[pos - 1], "\b");
+  return pos - n;
+}
+
+//*************************************************
+static uint8_t inputString(uint8_t history_flag)
+{
+  uint8_t len = 0;
+  uint8_t pos = 0;
+#if REPL_EDIT_ENABLE
+  uint8_t utf_count = 0;
+  uint8_t utf_bytes = 0;
+  uint8_t esc_count = 0;
+  char esc_digit = 0;
+#endif
+
+  *inputBuff = '\0';
+
+  while (1)
+  {
+    int16_t c = inputChar();
+    if (c < 0) continue;
+    uint8_t ch = (uint8_t)c;
+    switch (ch)
+    {
+    case CHR_BREAK:
       executeBreak();
-      return NULL;
-    case ASCII_CR :
-      str[len] = 0;
-#ifndef CLI_NO_ECHO
-      printChar( ch );
-      printChar( ASCII_LF );
+      return 0;
+
+    case ASCII_CR:
+      inputBuff[len] = '\0';
+      if (len) {
+#if REPL_EDIT_ENABLE
+#if REPL_HISTORY_ENABLE
+	    if (history_flag) {
+	      memcpy(historyBuff, inputBuff, sizeof(historyBuff));
+	    }
 #endif
-      return RawLine;
-    case ASCII_BS :
-    case ASCII_DEL :
-      if( len > 0 ){
-        len--;
-#ifndef CLI_NO_ECHO
-        printChar( ASCII_BS );
+        printString(&inputBuff[pos]);
 #endif
       }
+      printString("\r\n");
+      return (len);
+
+#if REPL_EDIT_ENABLE
+    case ASCII_ESC:
+      esc_count = 1;
+      esc_digit = 0;
       break;
-    default :
-      if( ch >= 0x20 && len < RAW_LINE_SIZE ){
-        str[len++] = (char)ch;
-#ifndef CLI_NO_ECHO
-        printChar(ch);
 #endif
+    case ASCII_BS:
+      if (pos == 0 || len == 0) break;
+      if (pos == len) {
+        uint8_t n = get_utf8_last_len(&inputBuff[pos - 1]);
+        printString(n > 1 ? "\b\b  \b\b" : "\b \b");
+        pos -= n;
+        len = pos;
+        inputBuff[len] = 0;
+        break;
       }
+#if REPL_EDIT_ENABLE
+      pos = inputStringLeft(inputBuff, pos);
+      /* fall through */
+    case ASCII_DEL:
+      if (pos != len) {
+        uint16_t n = get_utf8_len(&inputBuff[pos]);
+        memcpy(&inputBuff[pos], &inputBuff[pos + n], len - pos);
+        len -= n;
+        printString(CSI_SCP CSI_ED);    // cursor save, ED
+        printString(&inputBuff[pos]);
+        printString(CSI_RCP);           // cursor restore
+      }
+#endif
+      break;
+
+    case ASCII_HT:
+      ch = ASCII_SP;
+      /* fall through */
+    default:
+#if REPL_EDIT_ENABLE
+      if (esc_count == 1) {
+        esc_count = (ch == '[') ? 2 : 0;    // CSI sequence
+      }
+      else
+      if (esc_count == 2) {
+        if (isdigit(ch)) {
+          esc_digit = ch;
+          break;
+        }
+        esc_count = 0;
+#if REPL_HISTORY_ENABLE
+        if (ch == 'A') {                // Up
+          if (historyBuff[0] == '\0') break;
+          while (pos) pos = inputStringLeft(inputBuff, pos);
+          printString(CSI_ED);
+          memcpy(inputBuff, historyBuff, sizeof(historyBuff));
+          printString(inputBuff);
+          pos = len = (uint8_t)strlen(inputBuff);
+        }
+        else
+        if (ch == 'B') {                // Down
+          // Not implemented
+        }
+        else
+#endif
+        if (ch == 'C') {                 // Right
+          if (pos < len) pos = inputStringRight(inputBuff, pos);
+        }
+        else
+        if (ch == 'D') {                  // Left
+          pos = inputStringLeft(inputBuff, pos);
+        }
+        else
+        if (ch == 'H' || (ch == '~' && esc_digit == '1')) {  // Home
+          while (pos) pos = inputStringLeft(inputBuff, pos);
+        }
+        else
+        if (ch == 'F' || (ch == '~' && esc_digit == '4')) {  // End
+          if (len) printString(&inputBuff[pos]);
+            pos = len;
+        }
+      }
+      else
+      if (ch >= ASCII_SP) {
+        if (utf_count == 0) {
+          utf_bytes = get_utf8_bytes(ch);
+          if (utf_bytes == 0) break;
+          if (len + utf_bytes > (sizeof(inputBuff) - 2)) break;
+          utf_count = utf_bytes;
+        }
+        for (int16_t i = len; i > pos; i--) {
+          inputBuff[i] = inputBuff[i - 1];
+        }
+        inputBuff[pos++] = ch;
+        inputBuff[++len] = 0;
+        if (--utf_count) break;
+        if (pos == len) {
+          printString(&inputBuff[pos - utf_bytes]);
+        }
+        else {
+          pos -= utf_bytes;
+          printString(CSI_SCP); // cursor save
+          printString(&inputBuff[pos]);
+          printString(CSI_RCP); // cursor restore
+          pos = inputStringRight(inputBuff, pos);
+        }
+      }
+#else
+      if (ch >= ASCII_SP) {
+        if (len < (sizeof(inputBuff) - 2)) {
+          inputBuff[pos++] = (char)ch;
+          inputBuff[++len] = '\0';
+          printChar(ch);
+        }
+      }
+#endif
+      break;
     }
   }
 }
 
 //*************************************************
-uint8_t hex2byte( char ch )
+static uint8_t hex2byte(char ch)
 {
-  if( ch >= '0' && ch <= '9' ){
-    return ch - 0x30;
+  if (ch >= '0' && ch <= '9') {
+    return ch - '0';
   }
-  if( ch >= 'A' && ch <= 'F' ){
-    return ch - 0x37;
+  if (ch >= 'A' && ch <= 'F') {
+    return ch - 'A' + 10;
   }
-  if( ch >= 'a' && ch <= 'f' ){
-    return ch - 0x57;
+  if (ch >= 'a' && ch <= 'f') {
+    return ch - 'a' + 10;
   }
   return 0x10;
 }
 
 //*************************************************
-int16_t str2int16_t( char *str )
+static char *hex2val(char* str, nb_int_t* val)
 {
-  int16_t val;
-  char ch, flag;
-
-  val = 0;
-  flag = 0;
-  while( (ch = *str) <= 0x20 ){
-    if( ch == 0x00 ){
-      return val;
-    }
+  nb_int_t v = 0;
+  uint8_t ch;
+  while ((ch = hex2byte(*str)) < 0x10) {
+    v = (v << 4) + (nb_int_t)ch;
     str++;
   }
-  if( ch == '-' ){
-    flag = ch;
-    ch = *++str;
-  }
-  if( ch == ST_HEXCHR ){
-    while( (ch = hex2byte( *++str ) ) < 0x10 ){
-      val = (val << 4) + ch;
-    }
-  }else{
-    while( isdigit( ch )){
-      val = val * 10 + (ch - '0');
-      ch = *++str;
-    }
-  }
-  if( flag ){
-    val = -val;
-  }
-  return val;
+  *val = v;
+  return str;
 }
 
 //*************************************************
-void printVal( int16_t val )
+static char* dec2val(char* str, nb_int_t* val)
 {
-  printString( conv2str( val, 0, 0 ) );
+  nb_int_t v = 0;
+  uint8_t ch;
+  while (isdigit(ch = *str)) {
+    v = v * 10 + (ch - '0');
+    str++;
+  }
+  *val = v;
+  return str;
 }
 
 //*************************************************
-void printString( char *str )
+static void printVal(nb_int_t val)
 {
-  while( *str != 0 ){
-    printChar( *str++ );
+  printString(int2str(val, 0, 0));
+}
+
+//*************************************************
+static void printString(const char *str)
+{
+  while(*str != 0) {
+    printChar(*str++);
   }
 }
 
 //*************************************************
-void printStringFlash(const __FlashStringHelper* ifsh)
+static void printStringFlash(const __FlashStringHelper* ifsh)
 {
     PGM_P p = (PGM_P)ifsh;   // Flashアドレスに変換
     char c;
     while ((c = pgm_read_byte(p++)) != 0) {
-        printChar( c );
+      printChar(c);
     }
 }
 
 //*************************************************
-uint8_t convertInternalCode( uint8_t *dst, char *src )
+static void printNewline(void)
 {
-  char ch, cx, cc, *s2;
-  uint8_t len, intcode, *topptr;
-  uint16_t val;
+  printChar('\n');
+  printChar('\r');
+}
 
-  topptr = dst++;
-  len = 0;
-  while( true ){
-    while((ch = *src) <= 0x20){
-      if( *src == 0 ){
+//*************************************************
+static uint8_t convertInternalCode(uint8_t *dst, char *src)
+{
+  nb_int_t val;
+  uint8_t ch, cx, cc;
+  uint8_t last_st = 0;
+  uint8_t *topptr = dst;
+  uint8_t len = 0;
+
+  dst++;
+  while(true) {
+
+    len = (uint8_t)(dst - topptr);
+    if (len > CODE_BUFF_SIZE - 2) {
+      errorCode = ERROR_PGOVER;
+      return 0;
+    }
+
+    while((ch = (uint8_t)*src) <= ASCII_SP) {
+      if (*src == '\0') {
+        if (len <=1) len = 0;
         *dst++ = ST_EOL;
-        len++;
         *topptr = len;
         return len;
       }
       src++;
     }
-    ch = toupper( ch );
-    cx = toupper( src[1] );
-    if( ch == '?' ){
+
+    ch = toupper(ch);
+    cx = toupper(src[1]);
+    if (ch == '?') {
       *dst++ = ST_PRINT;
       src++;
-      len++;
     }else
-    if( isupper( ch ) ){
-      if( !isupper( cx ) ){
-        *dst++ = ch;
-        src++;
-        len++;
-      }else{
-        uint8_t index = 0;
-        intcode = TOKEN_START;
-        while( true ){
-            PGM_P s1 = (PGM_P)pgm_read_ptr( &keyWordList[index] );
-            if( s1 == NULL ){
+    if (ch == '0' && cx == 'X') {
+      src += 2;
+      if (isxdigit(*src)) {
+        src = hex2val(src, &val);
+        *dst = ST_VAL_HEX;
+        dst = set_dec_val(dst, val);
+      }
+      ch = ST_VAL;
+    }
+    else
+    if (isdigit(ch)) {
+      src = dec2val(src, &val);
+      if (last_st == '-' || last_st == '+') {
+        if (last_st == '-') {
+          if (len == 1) {
             errorCode = ERROR_SYNTAX;
             return 0;
           }
-          s2 = src;
-          while( true ){
-            ch = toupper( *s2 );
-            cc = pgm_read_byte( s1 );
-            if( ch != cc || cc == 0 ){
+          val = -val;
+        }
+        dst--;
+      }
+      *dst = ST_VAL_DEC;
+      dst = set_dec_val(dst, val);
+      ch = ST_VAL;
+    }
+    else
+    if (isupper(ch)) {
+      if (!isupper(cx)) {
+        *dst++ = ch;
+        src++;
+      }
+      else{
+        uint8_t index = 0;
+        while(true) {
+          PGM_P s1 = (PGM_P)pgm_read_ptr(&keyWordList[index]);
+          if (s1 == NULL) {
+            errorCode = ERROR_SYNTAX;
+            return 0;
+          }
+          char *s2 = src;
+          while(true) {
+            ch = toupper(*s2);
+            cc = toupper(pgm_read_byte(s1));
+            if (ch != cc || cc == 0) {
               break;
             }
             s1++;
             s2++;
           }
-          if( cc == 0 && !isupper(ch) ){
+          if (cc == 0 && !isupper(ch)) {
+            ch = TOKEN_START + index;
+            *dst++ = ch;
             src = s2;
-            *dst++ = intcode;
-            len++;
             break;
           }
-          intcode++;
           index++;
         }
       }
     }else
-    if( isdigit( ch ) ){
-      val = 0;
-      do{
-        val = val * 10 + (ch - '0');
-        ch = *++src;
-      }while( isdigit( ch ) );
-      if( val == 0 ){
-        *dst++ = VAL_ZERO;
-        len++;
-      }else
-      {
-        *dst++ = ST_DECVAL;
-        *((uint16_t*)dst) = val;
-        dst += 2;
-        len += 3;
-      }
-    }else
-    if( ch == ST_HEXCHR ){
-      if( isxdigit( *++src ) ) {
-        val = 0;
-        while( (ch = hex2byte( *src ) ) < 0x10 ) {
-          val = (val << 4) + ch;
-          src++;
-        }
-        *dst++ = ST_HEXVAL;
-        *((uint16_t*)dst) = val;
-        dst += 2;
-        len += 3;
-      }else
-      {
-        *dst++ = ch;
-        len++;
-      }
-    }else
-    if( ch == ST_STRING ){
-      do{
-        len++;
-        *dst++ = ch;
-        ch = *++src;
-        if( ch < 0x20 ){
+    if (ch == ST_STRING) {
+      *dst++ = *src++;
+      len++;
+      while (true) {
+      	ch = *src++;
+        if (ch == '\0') {
           errorCode = ERROR_SYNTAX;
           return 0;
         }
-      }while( ch != ST_STRING );
-      *dst++ = ch;
-      src++;
-      len++;
-    }else
-    if( ch == ST_COMMENT ){
-      while( ch >= 0x20 ){
-        len++;
         *dst++ = ch;
-        ch = *++src;
+        len++;
+        if (ch == ST_STRING) {
+          break;
+        }
+        if (ch == '\\' && *src == ST_STRING) {
+          *dst++ = *src++;
+          len++;
+        }
+        if (len >= CODE_BUFF_SIZE - 3) {
+          errorCode = ERROR_PGOVER;
+          return 0;
+        }
       }
     }else
-    if( ch == ST_ARRAY && cx == '[' ){
-      *dst++ = ch;
-      src++;
-      len++;
+    if (ch == ST_COMMENT) {
+      if (cx == ST_COMMENT) {
+        while (*++src != '\0');
+      }
+      else
+      while (true) {
+        if (++len >= CODE_BUFF_SIZE - 2) {
+          errorCode = ERROR_PGOVER;
+          return 0;
+        }
+        *dst++ = *src++;
+        if (*src == '\0') {
+          break;
+        }
+      }
     }else
-    if( IS_VALID_CHR(ch) ){
+    if (ch == ST_ARRAY && cx == '[') {
       *dst++ = ch;
       src++;
-      len++;
-    }else{
+    }else
+    if (IS_VALID_CHR(ch)) {
+      *dst++ = ch;
+      if ((ch == '-' || ch == '+') &&
+          (last_st == ')' ||
+           last_st == ']' ||
+           last_st == ST_VAL ||
+           isupper(last_st) ||
+           last_st >= FUNC_START)) {
+        ch = 0xff;
+      }
+      src++;
+    }
+    else {
       errorCode = ERROR_SYNTAX;
       return 0;
     }
+    last_st = ch;
   }
 }
 
 //*************************************************
-uint8_t *label2exeptr( int16_t val )
+static uint8_t *label2exeptr(nb_int_t val)
 {
   uint8_t ch, *ptr;
-  int16_t dec, lnum;
+  int16_t lnum;
 
   lnum = 1;
   ptr = (uint8_t*)PROGRAM_AREA_TOP;
-  while( true ){
+  while(true) {
     ch = *ptr++;
-    if( ch == ST_EOL ){
+    if (ch == ST_EOL) {
       return NULL;
     }
-    ch = *ptr++;
-    if( ch == ST_DECVAL ){
-      dec = *((int16_t*)ptr);
-      if( dec == val ){
-        executionPointer = ptr - 2;
+
+    nb_int_t dec;
+    uint8_t* p = get_dec_val(ptr, &dec);
+    if (p != NULL) {
+      if (dec == val) {
+        executionPointer = ptr - 1;
         lineNumber = lnum;
-        return ptr;
+        return p;
       }
-      ptr += 2;
+      ptr = p;
     }
-    while( ch != ST_EOL ){
-      if( IS_3BYTE_CODE( ch ) ){
-        ptr += 2;
-      }
-      ch = *ptr++;
+    while(*ptr != ST_EOL) {
+      ptr = get_next_ptr(ptr);
     }
+    ptr++;
     lnum++;
   }
 }
 
 //*************************************************
-uint8_t isDelimiter( uint8_t ch )
+static uint8_t isDelimiter(uint8_t ch)
 {
-  return IS_DELIMITER( ch );
+  return ((ch == ':')
+        ||(ch == ST_EOL)
+        ||(ch == ST_ELSE)
+        ||(ch == ST_ELSEIF)
+        ||(ch == ST_ENDIF)
+        ||(ch == ST_COMMENT));
 }
 
 //*************************************************
-uint8_t checkDelimiter( void )
+static error_code_t checkDelimiter(void)
 {
-  if( errorCode != ERROR_NONE ) return true;
-	if( !isDelimiter( *executionPointer ) ){
-    errorCode = ERROR_SYNTAX;
-    return true;
+  if (errorCode == ERROR_NONE) {
+    if (!isDelimiter(*executionPointer)) {
+      errorCode = ERROR_SYNTAX;
+    }
   }
-  return false;
+  return errorCode;
 }
 
 //*************************************************
-uint8_t checkST( uint8_t ch )
+static error_code_t checkST(uint8_t ch)
 {
-  if( errorCode != ERROR_NONE ) return true;
-  if( *executionPointer++ != ch ){
-    errorCode = ERROR_SYNTAX;
-    return true;
+  if (errorCode == ERROR_NONE) {
+    if (*executionPointer != ch) {
+      errorCode = ERROR_SYNTAX;
+    }
+    executionPointer++;
   }
-  return false;
+  return errorCode;
 }
 
 //*************************************************
-int16_t *getParameterPointer( void )
+static nb_int_t *getParameterPointer(void)
 {
   uint8_t ch;
 
   ch = *executionPointer++;
-  if( ch == ST_ARRAY ) {
+  if (ch == ST_ARRAY) {
     return getArrayReference();
-  } else
-  if( isupper( ch ) ){
+  }
+  else
+  if (isupper(ch)) {
     return &globalVariables[ch-'A'];
   }
   errorCode = ERROR_SYNTAX;
@@ -790,7 +1021,7 @@ int16_t *getParameterPointer( void )
 }
 
 //*************************************************
-uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, int16_t *lnum )
+static uint8_t *findST(const uint8_t *st_list, int16_t *lnum)
 {
   uint8_t ch, count_if, *ptr;
   int16_t num;
@@ -798,50 +1029,87 @@ uint8_t *findST( uint8_t st1, uint8_t st2, uint8_t st3, int16_t *lnum )
   count_if = 0;
   ptr = executionPointer;
   num = *lnum;
-  do{
-    while( true ){
+  while (true) {
+    while (true) {
       ch = *ptr++;
-      if( ch == ST_EOL ) break;
-      switch( ch ){
-      case ST_DECVAL :
-      case ST_HEXVAL :
-        ptr += 2;
-        break;
+      if (ch == ST_EOL) break;
+      switch(ch) {
       case ST_COMMENT :
-        while( *ptr != ST_EOL ) ptr++;
+        while (*ptr++ != ST_EOL);
         break;
       case ST_STRING :
-        while( *ptr++ != ST_STRING );
+        do {
+          ch = *ptr++;
+          if (ch == '\\') ptr++;
+        } while (ch != ST_STRING && ch != ST_EOL);
         break;
       case ST_IF :
         count_if++;
         break;
       case ST_ENDIF :
-        if( count_if ){
+        if (count_if) {
           count_if--;
           break;
         }
+        /* fall through */
       default :
-        if( count_if == 0 ){
-          if( ch == st1 || ch == st2 || ch == st3 ){
-            *lnum = num;
-            return ptr;
-          }
+        if (IS_ST_VAL(ch)) {
+          ptr += GET_VAL_SIZE(ch);
+        }
+        else
+        if (count_if == 0) {
+          const uint8_t* lp = st_list;
+          while (*lp) {
+            if (*lp == ch) {
+              lineNumber = num;
+              return (ptr);
+            }
+            lp++;
+          } 
         }
       }
     }
-    if( num == 0 )  break;
+    if (num == 0)  break;
+    if (*ptr++ == ST_EOL) break;
     num++;
-  } while( *ptr != ST_EOL );
+  }
   return NULL;
 }
 
 //*************************************************
-stack_t *pushStack( uint8_t st )
+static uint8_t* findNextLoop(uint8_t* ptr, uint8_t ch)
+{
+  static const uint8_t st_list_next_loop[] = { ST_NEXT, ST_FOR, 0, ST_LOOP, ST_WHILE, ST_DO, 0 };
+
+  const uint8_t* st_list = st_list_next_loop;
+  if (ch == ST_LOOP) st_list += 3;
+
+  int16_t num = lineNumber;
+  uint8_t count = 1;
+  while (count) {
+    executionPointer = ptr;
+    num = lineNumber;
+    ptr = findST(st_list, &num);
+    if (ptr == NULL)	return ptr;
+    ch = *(ptr - 1);
+    if (*st_list == ch) {
+      if (ch == ST_LOOP && *ptr == ST_WHILE) ptr++;
+      count--;
+    }
+    else {
+      count++;
+    }
+  }
+  lineNumber = num;
+  return ptr;
+}
+
+//*************************************************
+static stack_t *pushStack(uint8_t st)
 {
   stack_t *prevsp;
 
-  if( stackPointer >= STACK_NUM ) {
+  if (stackPointer >= STACK_NUM) {
     errorCode = ERROR_STACK;
     return NULL;
   }
@@ -854,153 +1122,245 @@ stack_t *pushStack( uint8_t st )
 }
 
 //*************************************************
-stack_t *popStack( uint8_t st )
+static stack_t *popStack(uint8_t st)
 {
   stack_t *prevsp;
 
-  if( stackPointer == 0 ) {
+  if (stackPointer == 0) {
     return NULL;
   }
   stackPointer--;
   prevsp = &stacks[stackPointer];
-  if( prevsp->type != st ) {
+  if (prevsp->type != st) {
     return NULL;
   }
   return prevsp;
 }
 
 //*************************************************
-int8_t checkBreakKey( void )
+static int16_t checkBreakKey(void)
 {
   int16_t ch = inputChar();
 
-  if( ch < 0 ) {
-    return 0;
-  } else
-  if( ch == CHR_BREAK ) {
-      executeBreak();
-      return -1;
+  if (ch < 0) return 0;
+  if (ch == CHR_BREAK) {
+    executeBreak();
+    return -1;
   }
-  return 1;
+  return ch;
 }
 
 //*************************************************
-static char *get_StringPara_Form( uint8_t fm )
+static char *get_StringPara_Form(uint8_t fm)
 {
-  uint8_t len = 0;
-  int16_t val;
+  int16_t len = 0;
+  nb_int_t val;
 
-  if ( checkST( '(' ) ) return NULL;
+  if (checkST('(')) return NULL;
   val = expr();
-  if ( errorCode ) return NULL;
-  if ( *executionPointer == ',' )
+  if (errorCode) return NULL;
+  if (*executionPointer == ',')
   {
     executionPointer++;
-    len = (uint8_t)expr();
+    len = (int16_t)expr();
   }
-  if ( checkST( ')' ) ) return NULL;
-  return conv2str( val, fm, len );
+  if (checkST(')')) return NULL;
+  return int2str(val, fm, len);
 }
 
 //*************************************************
-void proc_print( void )
+static uint8_t *print_escaped(uint8_t* s)
 {
-  uint8_t ch, lastChar;
-  int16_t val;
+  uint8_t val;
+  uint8_t count;
+
+  while (*s) {
+    if (*s == ST_STRING) {
+      s++;
+      break;
+    }
+    if (*s == '\\') {
+      s++;
+      switch (*s) {
+      case 'a':  printChar('\a'); break;
+      case 'b':  printChar('\b'); break;
+      case 'f':  printChar('\f'); break;
+      case 'n':  printChar('\n'); break;
+      case 'r':  printChar('\r'); break;
+      case 't':  printChar('\t'); break;
+      case 'v':  printChar('\v'); break;
+      case '\\': printChar('\\'); break;
+      case '\'': printChar('\''); break;
+      case '\"': printChar('\"'); break;
+      case '\?': printChar('\?'); break;
+
+      case 'x':		// hex escape : \xHH
+        s++;
+        val = 0;
+        count = 0;
+        while(count < 2) {
+          uint8_t ch = hex2byte(*s);
+          if (ch > 0x0f) break;
+          val = (val << 4) + ch;
+          s++;
+          count++;
+        }
+        printChar(val);
+        s--;
+        break;
+      default:
+        if (*s < '0' || *s > '7') {
+          if (*s) printChar(*s); // Unknown
+          break;
+        }
+        // oct escape: \OOO
+        val = 0;
+        count = 0;
+        while (count < 3) {
+          if (*s < '0' || *s > '7') break;
+          val = (val << 3) + (*s - '0');
+          s++;
+          count++;
+        }
+        printChar(val);
+        s--;
+        break;
+      }
+    }
+    else {
+      printChar(*s);
+    }
+    s++;
+  }
+  return s;
+}
+
+//*************************************************
+static void proc_print(void)
+{
+  uint8_t ch;
+  nb_int_t val;
   char *p;
 
-  lastChar = 0;
-  while( true ) {
-    ch = *executionPointer;
-    if( isDelimiter( ch )){
-      if( lastChar != ';' && lastChar != ',' ){
-        printStringFlash( FPSTR(newlineStr) );
+  uint8_t exp_flag = false;
+  uint8_t lastChar = 0;
+  while(true) {
+    if (isDelimiter(*executionPointer)) {
+      if (lastChar != ';' && lastChar != ',') {
+        printNewline();
       }
       return;
     }
     lastChar = ch = *executionPointer++;
-    switch( ch ) {
+    switch (ch) {
     case ST_STRING :
-      while((ch = *executionPointer++) != ST_STRING ){
-        printChar( ch );
-      }
+      executionPointer = print_escaped(executionPointer);
+      exp_flag = false;
+      break;
+
+    case ';':
+      exp_flag = false;
       break;
 
     case ',':
-      printChar( '\t' );
-
-    case ';':
+      printChar('\t');
+      exp_flag = false;
       break;
 
     case FUNC_CHR :
       val = calcValueFunc();
-      if( errorCode != ERROR_NONE ) return;
-      if( val >= 0x100 ) {
-        printChar( val >> 8 );
+      if (errorCode != ERROR_NONE) return;
+      if (val >= 0x100) {
+        printChar(val >> 8);
       }
-      printChar( val );
+      printChar(val);
+      exp_flag = false;
       break;
 
-    case '$' :
-      if ( *executionPointer != '(' ) goto print_default;
-      p = get_StringPara_Form( FORM_HEX );
-      if( !errorCode ) printString( p );
+    case FUNC_HEX: 
+      p = get_StringPara_Form(FORM_HEX);
+      if (!errorCode) printString(p);
+      exp_flag = false;
       break;
 
-    case VAL_ZERO :
-      if ( *executionPointer != '(' ) goto print_default;
-      p = get_StringPara_Form( FORM_DEC );
-      if( !errorCode ) printString( p );
+    case FUNC_DEC:
+      p = get_StringPara_Form(FORM_DEC);
+      if (!errorCode) printString(p);
+      exp_flag = false;
       break;
 
     default:
-print_default:
-      executionPointer--;
-      val = expr();
-      if( errorCode != ERROR_NONE ){
+      if (exp_flag) {
+        errorCode = ERROR_SYNTAX;
         return;
       }
-      printVal( val );
+      executionPointer--;
+      val = expr();
+      if (errorCode != ERROR_NONE) {
+        return;
+      }
+      printVal(val);
+      exp_flag = true;
       break;
     }
   }
 }
 
 //*************************************************
-void proc_input( void )
+static nb_int_t str2val(char* str)
 {
-  uint8_t flg;
-  int16_t *pvar;
+  nb_int_t val = 0;
+  uint8_t ch;
+
+  while ((ch = (uint8_t)*str) <= ASCII_SP) {
+    if (ch == '\0') {
+      return val;
+    }
+    str++;
+  }
+  bool flag = (ch == '-');
+  if (flag) {
+    ch = *++str;
+  }
+  if (ch == '0' && (str[1] =='X' || str[1] =='x')) {
+    str += 2;
+    hex2val(str, &val);
+  }
+  else {
+    dec2val(str, &val);
+  }
+  if (flag) {
+    val = -val;
+  }
+  return val;
+}
+
+//*************************************************
+static void proc_input(void)
+{
+  nb_int_t* pvar;
 
   pvar = getParameterPointer();
-  if( pvar == NULL )  return;
+  if (pvar == NULL)  return;
 
-  flg = *executionPointer;
-  if( flg == ST_HEXCHR ){
-    executionPointer++;
-  }
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
 
-  if( inputString() == NULL ){
-    return;
-  }
-  if( flg == ST_HEXCHR ){
-    *pvar = RawLine[0];
-  }else{
-    *pvar = str2int16_t( RawLine );
+  if (inputString(false) > 0) {
+    *pvar = str2val(inputBuff);
   }
 }
 
 //*************************************************
-uint8_t *goto_sub( void )
+static uint8_t *goto_sub(void)
 {
-  int16_t val;
+  nb_int_t val;
   uint8_t *rptr;
 
   val = expr();
+  if (checkDelimiter())  return NULL;
   rptr = executionPointer;
-  if( errorCode != ERROR_NONE ) return NULL;
-  if( label2exeptr( val ) == NULL ){
+  if (errorCode != ERROR_NONE) return NULL;
+  if (label2exeptr(val) == NULL) {
     errorCode = ERROR_LABEL;
     return NULL;
   }
@@ -1009,68 +1369,69 @@ uint8_t *goto_sub( void )
 }
 
 //*************************************************
-void proc_goto( void )
+static void proc_goto(void)
 {
   goto_sub();
 }
 
 //*************************************************
-void proc_gosub( void )
+static void proc_gosub(void)
 {
   stack_t *prevsp;
 
-  prevsp = pushStack( ST_GOSUB );
-  if( prevsp == NULL )  return;
+  prevsp = pushStack(ST_GOSUB);
+  if (prevsp == NULL)  return;
   prevsp->returnPointer = goto_sub();
-  if( errorCode != ERROR_NONE ){
+  if (errorCode != ERROR_NONE) {
     stackPointer--;
   }
 }
 
 //*************************************************
-void proc_return( void )
+static void proc_return(void)
 {
   stack_t *prevsp;
   prevsp = &stacks[stackPointer];
 
-  if( checkDelimiter() )  return;
-  while( true ) {
-    if( stackPointer == 0 ) {
+  if (checkDelimiter())  return;
+  while(true) {
+    if (stackPointer == 0) {
       errorCode = ERROR_UXRETURN;
       return;
     }
     stackPointer--;
     prevsp--;
-    if(prevsp->type == ST_GOSUB ) break;
+    if (prevsp->type == ST_GOSUB) break;
   }
   executionPointer = prevsp->returnPointer;
   lineNumber = prevsp->returnLineNumber;
 }
 
 //*************************************************
-void proc_for( void )
+static void proc_for(void)
 {
   uint8_t ch;
-  int16_t from, to, step, *pvar;
+  nb_int_t from, to, step, *pvar;
   stack_t *prevsp;
 
   pvar = getParameterPointer();
-  if( pvar == NULL )  return;
-  if( checkST( '=' ) ) return;
+  if (pvar == NULL)  return;
+  if (checkST('=')) return;
   from = expr();
-  if( checkST( ST_TO ) ) return;
+  if (checkST(ST_TO)) return;
   to = expr();
-  if( errorCode != ERROR_NONE ) return;
+  if (errorCode != ERROR_NONE) return;
   ch = *executionPointer++;
-  if( ch == ST_STEP ) {
+  if (ch == ST_STEP) {
     step = expr();
-    if( errorCode != ERROR_NONE ) return;
-  } else {
+    if (errorCode != ERROR_NONE) return;
+  }
+  else {
     step = 1;
     executionPointer--; /* unget it */
   }
-  prevsp = pushStack( ST_FOR );
-  if( prevsp == NULL )  return;
+  prevsp = pushStack(ST_FOR);
+  if (prevsp == NULL)  return;
   *pvar = from;
   prevsp->pvar = pvar;
   prevsp->limit = to;
@@ -1078,26 +1439,27 @@ void proc_for( void )
 }
 
 //*************************************************
-void proc_next( void )
+static void proc_next(void)
 {
   stack_t *prevsp;
 
-  if( checkDelimiter() ) return;
-  prevsp = popStack( ST_FOR );
-  if( prevsp == NULL ){
+  if (checkDelimiter()) return;
+  prevsp = popStack(ST_FOR);
+  if (prevsp == NULL) {
     errorCode = ERROR_UXNEXT;
     return;
   }
-  if( prevsp->limit == *(prevsp->pvar) ) {
+  if (prevsp->limit == *(prevsp->pvar)) {
     return;
   }
   *(prevsp->pvar) += prevsp->step;
-  if( prevsp->step > 0 ) {
-    if( prevsp->limit < *(prevsp->pvar) ) {
+  if (prevsp->step > 0) {
+    if (prevsp->limit < *(prevsp->pvar)) {
       return;
     }
-  } else {
-    if( prevsp->limit > *(prevsp->pvar) ) {
+  }
+  else {
+    if (prevsp->limit > *(prevsp->pvar)) {
       return;
     }
   }
@@ -1107,160 +1469,159 @@ void proc_next( void )
 }
 
 //*************************************************
-void proc_do( void )
+static void proc_do(void)
 {
   stack_t *prevsp;
 
-  if( checkDelimiter() ) return;
-  prevsp = pushStack( ST_DO );
-  if( prevsp == NULL )  return;
+  if (checkDelimiter()) return;
+  prevsp = pushStack(ST_DO);
+  if (prevsp == NULL)  return;
   prevsp->returnPointer = executionPointer - 1;
 }
 
 //*************************************************
-void proc_loop( void )
+static void proc_loop(void)
 {
-  int16_t val;
+  nb_int_t val;
   stack_t *prevsp;
 
-  prevsp = popStack( ST_DO );
-  if( prevsp == NULL ){
+  prevsp = popStack(ST_DO);
+  if (prevsp == NULL) {
     errorCode = ERROR_UXLOOP;
     return;
   }
 
-  if( *executionPointer == ST_WHILE ){
+  if (*executionPointer == ST_WHILE) {
     executionPointer++;
     val = expr();
-    if( checkDelimiter() ) return;
-    if( !val ) return;
-  }else
-  if( checkDelimiter() ) return;
+    if (checkDelimiter()) return;
+    if (!val) return;
+  }
+  else
+  if (checkDelimiter()) return;
   executionPointer = prevsp->returnPointer;
   lineNumber = prevsp->returnLineNumber;
 }
 
 //*************************************************
-void proc_while( void )
+static uint8_t* skipToDelimiter(uint8_t* ptr)
 {
-  int16_t val;
+  while (!isDelimiter(*ptr)) ptr++;
+  return ptr;
+}
+
+//*************************************************
+static void proc_while(void)
+{
+  nb_int_t val;
   stack_t *prevsp;
   uint8_t *ptr;
 
   ptr = executionPointer;
   val = expr();
-  if( checkDelimiter() ) return;
-  if( val ) {
-    prevsp = pushStack( ST_DO );
-    if( prevsp == NULL )  return;
+  if (checkDelimiter()) return;
+  if (val) {
+    prevsp = pushStack(ST_DO);
+    if (prevsp == NULL)  return;
     prevsp->returnPointer = ptr - 1;
-  }else{
-    ptr = findST( ST_LOOP, ST_LOOP, ST_LOOP, &lineNumber );
-    if( ptr == NULL ){
+  }
+  else {
+    ptr = findNextLoop(ptr, ST_LOOP);
+    if (ptr == NULL) {
       errorCode = ERROR_NOLOOP;
       return;
     }
-    while( !isDelimiter( *ptr ) )ptr++;;
-    executionPointer = ptr;
+    executionPointer = skipToDelimiter(ptr);
   }
 }
 
 //*************************************************
-void proc_exit( void )
+static void proc_exit(void)
 {
-  stack_t *prevsp;
-  uint8_t *ptr, tp;
+  uint8_t* ptr = NULL;
+  if (checkDelimiter()) return;
+  if (stackPointer) {
+    stack_t* prevsp = &stacks[stackPointer - 1];
 
-  if( checkDelimiter() ) return;
-  if( stackPointer == 0 ) {
-    errorCode = ERROR_UXEXIT;
-    return;
-  }
-
-  prevsp = &stacks[stackPointer-1];
-  if( prevsp->type == ST_FOR ) tp = ST_NEXT;
-  else
-  if( prevsp->type == ST_DO  ) tp = ST_LOOP;
-  else{
-    errorCode = ERROR_UXEXIT;
-    return;
-  }
-  ptr = findST( tp, tp, tp, &lineNumber);
-  if( ptr == NULL ){
-    errorCode = ERROR_UXEXIT;
-    return;
-  }
-  stackPointer--;
-  while( !isDelimiter( *ptr ) ) ptr++;
-  executionPointer = ptr;
-}
-
-//*************************************************
-void proc_continue( void )
-{
-  uint8_t *ptr;
-  stack_t *prevsp;
-
-  if( checkDelimiter() ) return;
-  if( stackPointer == 0 ) {
-    errorCode = ERROR_UXCONTINUE;
-    return;
-  }
-
-  prevsp = &stacks[stackPointer-1];
-  if( prevsp->type == ST_DO ) {
-  	executionPointer = prevsp->returnPointer;
-  	lineNumber = prevsp->returnLineNumber;
-		return;
-	} else
-  if( prevsp->type == ST_FOR ) {
-    ptr = findST( ST_NEXT, ST_NEXT, ST_NEXT, &lineNumber);
-  	if( ptr != NULL ){
-		  executionPointer = ptr - 1;
-		  return;
+    if (prevsp->type == ST_DO) {
+      ptr = findNextLoop(executionPointer, ST_LOOP);
     }
+    else
+    if (prevsp->type == ST_FOR) {
+      ptr = findNextLoop(executionPointer, ST_NEXT);
+    }
+  }
+  if (ptr) {
+    stackPointer--;
+    executionPointer = skipToDelimiter(ptr);
+    return;
+  }
+  errorCode = ERROR_UXEXIT;
+}
+
+//*************************************************
+static void proc_continue(void)
+{
+  uint8_t* ptr = NULL;
+  if (checkDelimiter()) return;
+  if (stackPointer) {
+    stack_t* prevsp = &stacks[stackPointer - 1];
+
+    if (prevsp->type == ST_DO) {
+    	stackPointer--;
+      executionPointer = prevsp->returnPointer;
+      lineNumber = prevsp->returnLineNumber;
+      return;
+    }
+    else
+    if (prevsp->type == ST_FOR) {
+      ptr = findNextLoop(executionPointer, ST_NEXT);
+    }
+    if (ptr) return;
   }
   errorCode = ERROR_UXCONTINUE;
 }
 
 //*************************************************
-void proc_if( void )
+static void proc_if (void)
 {
-  int16_t val;
+  static const uint8_t st_list[] = { ST_ENDIF, ST_ELSE, ST_ELSEIF, 0 };
+  nb_int_t val;
   uint8_t ch, *ptr;
 
   do{
     val = expr();
-    if( checkST( ST_THEN ) ) return;
-    if( val ) {
-      if( IS_VAL( *executionPointer ) ) {
+    if (checkST(ST_THEN)) return;
+    if (val) {
+      if (IS_VAL(*executionPointer)) {
         proc_goto();
       }
       return;
     }
-    ptr = findST( ST_ENDIF, ST_ELSE, ST_ELSEIF, &lineNumber);
-    if( ptr == NULL ){
+    ptr = findST(st_list, &lineNumber);
+    if (ptr == NULL) {
       errorCode = ERROR_NOENDIF;
       return;
     }
     executionPointer = ptr;
     ch =  *(executionPointer - 1);
-  }while( ch == ST_ELSEIF );
+  }while(ch == ST_ELSEIF);
 
-  if( ch == ST_ELSE ){
-    if( IS_VAL( *executionPointer ) ) {
+  if (ch == ST_ELSE) {
+    if (IS_VAL(*executionPointer)) {
       proc_goto();
     }
   }
 }
 
 //*************************************************
-void proc_else( void )
+static void proc_else(void)
 {
+  static const uint8_t st_list[] = { ST_ENDIF, 0 };
   uint8_t *ptr;
 
-  ptr = findST( ST_ENDIF, ST_ENDIF, ST_ENDIF, &lineNumber);
-  if( ptr == NULL ){
+  ptr = findST(st_list, &lineNumber);
+  if (ptr == NULL) {
     errorCode = ERROR_NOENDIF;
     return;
   }
@@ -1268,20 +1629,21 @@ void proc_else( void )
 }
 
 //*************************************************
-void proc_elseif( void )
+static void proc_elseif (void)
 {
   proc_else();
 }
 
 //*************************************************
-void proc_endif( void )
+static void proc_endif (void)
 {
+  /* Nothing to do */
   checkDelimiter();
 }
 
 //*************************************************
-void programRun( void )
-{ 
+static void programRun(void)
+{
   initializeValiables();
   errorCode = ERROR_NONE;
   lineNumber = 1;
@@ -1290,17 +1652,17 @@ void programRun( void )
 }
 
 //*************************************************
-void proc_run( void )
+static void proc_run(void)
 {
-  if( checkDelimiter() != ERROR_NONE ) return;
+  if (checkDelimiter()) return;
   programRun();
 }
 
 //*************************************************
-void proc_resume( void )
+static void proc_resume(void)
 {
-  if( checkDelimiter() ) return;
-  if( resumePointer == NULL ) {
+  if (checkDelimiter()) return;
+  if (resumePointer == NULL) {
     errorCode = ERROR_RESUME;
     return;
   }
@@ -1309,157 +1671,178 @@ void proc_resume( void )
 }
 
 //*************************************************
-void proc_stop( void )
+static void proc_stop(void)
 {
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
   executeBreak();
 }
 
 //*************************************************
-void proc_end( void )
+static void proc_end(void)
 {
-  if( checkDelimiter() ) return;
-  returnRequest = REQUEST_EXIT;
+  if (checkDelimiter()) return;
+  returnRequest = REQUEST_END;
   programInit();
 }
 
 //*************************************************
-void proc_new( void )
+static void proc_new(void)
 {
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
   initializeValiables();
   programNew();
 }
 
 //*************************************************
-void proc_list( void )
+static void proc_list(void)
 {
-  int16_t val;
+  nb_int_t val;
   uint8_t flag, ch, *ptr;
 
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
   ptr = (uint8_t*)PROGRAM_AREA_TOP;
-  while( *ptr++ != ST_EOL ){
+  while(*ptr++ != ST_EOL) {
     flag = true;
-    while( true ) {
-      ch = *ptr++;
-      if( ch == ST_EOL ) {
-        printStringFlash( FPSTR(newlineStr) );
-        break;
-      } else
-      if( ch == ST_DECVAL ) {
-        val = *((int16_t*)ptr);
-        printVal( val );
-        if( flag ){
-          printChar( 0x20 );
+    while(true) {
+      ch = *ptr;
+      uint8_t *p = get_dec_val(ptr, &val);
+      if (p != NULL) {
+        if (ch & VAL_BASE_HEX) {
+          printString("0x");
+          printString(int2str(val, FORM_HEX, 0));
         }
-        ptr += 2;
-      } else
-      if( ch == ST_HEXVAL ) {
-        val = *((int16_t*)ptr);
-        printChar( ST_HEXCHR );
-        printString(conv2str( val, FORM_HEX, 0 ));
-        ptr += 2;
-      } else
-      if( ch == ST_STRING ) {
-        printChar( ST_STRING );
+        else {
+          printVal(val);
+          if (flag) {
+            printChar(ASCII_SP);
+          }
+        }
+        ptr = p;
+        continue;
+      }
+      ptr++;
+      if (ch == ST_EOL) {
+        printNewline();
+        break;
+      }
+      else
+      if (ch == ST_STRING) {
+        printChar(ch);
         do{
           ch = *ptr++;
-          printChar( ch );
-        }while( ch != ST_STRING );
-      } else
-      if( ch == ST_COMMENT ) {
-        printChar( ST_COMMENT );
-        while( *ptr != ST_EOL )
-          printChar( *ptr++ );
-      } else
-      if( ch >= TOKEN_START ) {
-        if( !flag && (ch >= STSP_START && ch <= STSP_END)) {
-          printChar( 0x20 );
+          printChar(ch);
+          if (ch == '\\') {
+            printChar(*ptr++);
+          }
+        }while(ch != ST_STRING);
+      }
+      else
+      if (ch == ST_COMMENT) {
+        printChar(ch);
+        while (*ptr != ST_EOL) {
+          printChar(*ptr++);
         }
-        PGM_P p = (PGM_P)pgm_read_ptr( &keyWordList[ch-TOKEN_START] );
-        printStringFlash( FPSTR(p) );
-        if( ch <= STSP_END && !isDelimiter( *ptr )){
-          printChar( 0x20 );
+      }
+      else
+      if (ch >= TOKEN_START) {
+        if (!flag && (ch >= STSP_START && ch <= STSP_END)) {
+          printChar(ASCII_SP);
         }
-      } else {
-        printChar( ch );
+        PGM_P p = (PGM_P)pgm_read_ptr(&keyWordList[ch-TOKEN_START]);
+        char c;
+        while ((c = pgm_read_byte(p++)) != 0) {
+#if LIST_STYLE == 0
+          c = toupper(c);
+#elif LIST_STYLE == 1
+          c = tolower(c);
+#endif
+          printChar(c);
+        }
+        if (ch <= STSP_END && !isDelimiter(*ptr)) {
+          printChar(ASCII_SP);
+        }
+      }
+      else {
+#if LIST_STYLE != 0
+        ch = tolower(ch);
+#endif
+        printChar(ch);
       }
       flag = false;
     }
   }
 
-  if( progLength < 2 ) progLength = 0;
+  if (progLength < 2) progLength = 0;
   printStringFlash(F("["));
   printVal(progLength);
   printStringFlash(F(" bytes]\r\n"));
 }
 
 //*************************************************
-void proc_prog( void )
+static void proc_prog(void)
 {
   uint8_t len, *ptr, *src;
   uint16_t  remain;
 
-  if( checkDelimiter() ) return;
-  if( lineNumber ){
+  if (checkDelimiter()) return;
+  if (lineNumber) {
     errorCode = ERROR_NOTINRUN;
     return;
   }
   remain = PROGRAM_AREA_SIZE - 3;
   progLength = 0;
   ptr = (uint8_t*)PROGRAM_AREA_TOP;
-  while( true ){
+  while(true) {
     errorCode = ERROR_NONE;
-    printChar( '>' );
-    if( inputString() == NULL ){
-      break;
-    }
-    if( RawLine[0] == CHR_PROG_TERM ){
-      returnRequest = REQUEST_EXIT;
-      break;
-    }
-    len = convertInternalCode( InternalcodeLine, RawLine );
-    if( remain < len ){
-      errorCode = ERROR_PGOVER;
-    }
-    if( errorCode != ERROR_NONE ){
-      printError();
-    } else
-    if( len > 0 ) {
-      len++;
-      progLength += len;
-      remain -= len;
-      src = InternalcodeLine;
-      while( len-- > 0 ) {
-        *ptr++ = *src++;
-      }
-    }
+    printChar('>');
+    if (inputString(false) > 0) {
+	    if (inputBuff[0] == CHR_PROG_TERM) {
+	      returnRequest = REQUEST_END;
+	      break;
+	    }
+	    len = convertInternalCode(internalcodeBuff, inputBuff);
+	    if (remain < len) {
+	      errorCode = ERROR_PGOVER;
+	    }
+	    if (errorCode != ERROR_NONE) {
+	      printError();
+	    }
+	    else
+	    if (len > 0) {
+	      len++;
+	      progLength += len;
+	      remain -= len;
+	      src = internalcodeBuff;
+	      while(len-- > 0) {
+	        *ptr++ = *src++;
+	      }
+	    }
+		}
   }
   *ptr++ = ST_EOL;
-  if( progLength > 1 ) progLength++;
+  if (progLength > 1) progLength++;
 }
 
 //*************************************************
-void proc_save( void )
+static void proc_save(void)
 {
   uint8_t flag = *executionPointer;
-  if( flag == VAL_ZERO || flag == '!' ) {
+  if (flag == '0' || flag == '!') {
     executionPointer++;
   }
-  if( checkDelimiter() ) return;
-  if( lineNumber ){
+  if (checkDelimiter()) return;
+  if (lineNumber) {
     errorCode = ERROR_NOTINRUN;
     return;
   }
 
-  if( flag == VAL_ZERO ){
-    bios_eepEraseBlock( EEP_HEADER_ADDR, EEP_HEADER_SIZE + PROGRAM_AREA_SIZE );
+  if (flag == '0') {
+    bios_eepEraseBlock(EEP_HEADER_ADDR, EEP_HEADER_SIZE + PROGRAM_AREA_SIZE);
     return;
   }
 
   uint8_t *ptr = (uint8_t*)PROGRAM_AREA_TOP;
-  if( *ptr == ST_EOL ){
+  if (*ptr == ST_EOL) {
     errorCode = ERROR_PGEMPTY;
     return;
   }
@@ -1473,302 +1856,316 @@ void proc_save( void )
   eep.autoRun = (flag == '!');
   eep.reserved = 0x00;
 
-  bios_eepWriteBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
-  bios_eepWriteBlock( EEP_PROGRAM_ADDR, ptr,  (uint16_t)progLength );
+  bios_eepWriteBlock(EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE);
+  bios_eepWriteBlock(EEP_PROGRAM_ADDR, ptr,  (uint16_t)progLength);
 }
 
 //*************************************************
-int8_t progLoad( void )
+static int8_t progLoad(void)
 {
   EEP_Header_t eep;
-  bios_eepReadBlock( EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE );
-  if (eep.magic1 != EEP_MAGIC_1 || eep.magic2 != EEP_MAGIC_2 ) {
+  bios_eepReadBlock(EEP_HEADER_ADDR, (uint8_t*)&eep, EEP_HEADER_SIZE);
+  if (eep.magic1 != EEP_MAGIC_1 || eep.magic2 != EEP_MAGIC_2) {
+     errorCode = ERROR_PGEMPTY;
     return -1;
   }
-  if( eep.progLength < 2 || eep.progLength > PROGRAM_AREA_SIZE ){
-    return 0;
+  if (eep.progLength < 2) {
+     errorCode = ERROR_PGEMPTY;
+    return -1;
+  }
+  if (eep.progLength > PROGRAM_AREA_SIZE) {
+    errorCode = ERROR_PGOVER;
+    return -1;
   }
   progLength = eep.progLength;
-  bios_eepReadBlock( EEP_PROGRAM_ADDR, PROGRAM_AREA_TOP, (uint16_t)progLength );
-  if( eep.autoRun ) return 2;
-  return 1;
+  bios_eepReadBlock(EEP_PROGRAM_ADDR, PROGRAM_AREA_TOP, (uint16_t)progLength);
+  return eep.autoRun;
 }
 
 //*************************************************
-void proc_load( void )
+static void proc_load(void)
 {
-  if( checkDelimiter() ) return;
-  if( lineNumber ){
+  if (checkDelimiter()) return;
+  if (lineNumber) {
     errorCode = ERROR_NOTINRUN;
     return;
   }
-  if( progLoad() < 1 ){
-    errorCode = ERROR_PGEMPTY;
-    return;
-  }
+  progLoad();
 }
 
 //*************************************************
-void proc_comment( void )
+static void proc_comment(void)
 {
-  while( *executionPointer != ST_EOL ){
+  while(*executionPointer != ST_EOL) {
     executionPointer++;
   }
 }
 
 //*************************************************
-void proc_outp( void )
+static uint8_t get_arg2(nb_int_t *val_1, nb_int_t *val_2)
 {
-  int16_t val_1, val_2;
-
-  val_1 = expr();
-  if( checkST( ',' ) ) return;
-  val_2 = expr();
-  if( checkDelimiter() ) return;
-
-  if( bios_writeGpio( val_1, val_2 ) ) {
-      errorCode = ERROR_PARA;
-  }
-}
-
-//*************************************************
-error_code_t delayMs( int16_t val )
-{
-
-  int16_t waitStart = bios_getSystemTick();
-
-  while( checkBreakKey() >= 0 ) {
-    int16_t elapsed = bios_getSystemTick() - waitStart;
-    if( elapsed > val ) break;
+  *val_1 = expr();
+  if (!checkST(',')) {
+    *val_2 = expr();
+    checkDelimiter();
   }
   return errorCode;
 }
 
 //*************************************************
-void proc_delay( void )
+static void proc_outp(void)
 {
-  int16_t val;
+  nb_int_t val_1, val_2;
+
+  if (get_arg2( &val_1, &val_2) == ERROR_NONE) {
+    if (bios_writeGpio(val_1, val_2)) {
+      errorCode = ERROR_PARA;
+    }
+  }
+}
+
+//*************************************************
+static error_code_t delayMs(nb_int_t val)
+{
+  nb_int_t waitStart = bios_getSystemTick();
+
+  while(checkBreakKey() >= 0) {
+    nb_int_t elapsed = bios_getSystemTick() - waitStart;
+    if (elapsed > val) break;
+  }
+  return errorCode;
+}
+
+//*************************************************
+static void proc_delay(void)
+{
+  nb_int_t val;
 
   val = expr();
-  if( checkDelimiter() ) return;
-  delayMs( val );
+  if (checkDelimiter()) return;
+  delayMs(val);
 }
 
 //*************************************************
-void proc_pause( void )
+static void proc_pause(void)
 {
-  if( checkDelimiter() ) return;
-  while( checkBreakKey() == 0 );
+  if (checkDelimiter()) return;
+  while (checkBreakKey() == 0);
 }
 
 //*************************************************
-void proc_reset( void )
+static void proc_reset(void)
 {
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
   bios_systemReset();
 }
 
 //*************************************************
-uint8_t checkDivZero( uint16_t val)
+static error_code_t checkDivZero(nb_int_t val)
 {
-	if( errorCode != ERROR_NONE ) return true;
-	if( val == 0 ) {
-	  errorCode = ERROR_DIVZERO;
-	  return true;
+  if (errorCode == ERROR_NONE) {
+    if (val == 0) {
+      errorCode = ERROR_DIVZERO;
+    }
   }
-	return false;
+  return errorCode;
 }
 
 //*************************************************
-uint8_t proc_let( int16_t *pvar, uint8_t ope )
+static void let_variable(nb_int_t *pvar)
 {
-  if ( ope == executionPointer[1] )
-  {
+  uint8_t op = *executionPointer;
+
+  if (op == executionPointer[1]) {
     executionPointer += 2;
-		if( ope == '+' ) { if( !checkDelimiter() ) (*pvar)++; return errorCode; }
-  	if( ope == '-' ) { if( !checkDelimiter() ) (*pvar)--; return errorCode; }
-    if( ope !='<' && ope != '>' ) return errorCode = ERROR_SYNTAX;
-  } else
-  if ( IS_OPERATOR_CHR( ope ) )
-  {
-    ++executionPointer;
+    if (op == '+') { (*pvar)++; return; }
+    if (op == '-') { (*pvar)--; return; }
+    if (op !='<' && op != '>') {errorCode = ERROR_SYNTAX;return;}
   }
-  if ( checkST( '=' ) ) return errorCode;
-  int16_t val = expr();
-  if ( errorCode ) return errorCode;
-  switch ( ope )
-  {
+  else
+  if (op=='+' || op=='-' || op=='*' || op=='/' || op=='%' || op=='|' || op=='&' || op=='^') {
+    executionPointer++;
+  }
+  if (checkST('=')) return;
+  nb_int_t val = expr();
+  if (errorCode) return;
+
+  switch (op) {
   case '+' : *pvar += val; break;
   case '-' : *pvar -= val; break;
   case '*' : *pvar *= val; break;
-  case '/' : if ( checkDivZero( val ) ) *pvar /= val; break;
-  case '%' : if ( checkDivZero( val ) ) *pvar %= val; break;
+  case '/' : if (!checkDivZero(val)) *pvar /= val; break;
+  case '%' : if (!checkDivZero(val)) *pvar %= val; break;
   case '|' : *pvar |= val; break;
   case '&' : *pvar &= val; break;
   case '^' : *pvar ^= val; break;
   case '<' : *pvar <<= val; break;
   case '>' : *pvar >>= val; break;
-  default  : *pvar = val; break;
+  case '=' : *pvar = val; break;
+  default : break;
   }
-  return errorCode;
 }
 
 //*************************************************
-void proc_let_valiable( int16_t *pvar )
+static void proc_let(nb_int_t *pvar)
 {
-  proc_let( pvar, *executionPointer );
+  let_variable(pvar);
   checkDelimiter();
 }
 
 //*************************************************
-void proc_randomize( void )
+static void proc_randomize(void)
 {
-  int16_t val;
+  nb_int_t val;
 
   val = expr();
-  if( checkDelimiter() ) return;
-  bios_randomize( val );
+  if (checkDelimiter()) return;
+  bios_randomize(val);
 }
 
 //*************************************************
-void proc_data( void )
+static void proc_data(void)
 {
-  uint8_t ch;
-
-  while( true ){
-    ch = *executionPointer;
-    if( isDelimiter( ch ) ){
-      return;
-    }
-    if( IS_3BYTE_CODE( ch ) ){
-      executionPointer += 2;
-    }
-    executionPointer++;
+  while (!isDelimiter(*executionPointer)) {
+    executionPointer = get_next_ptr(executionPointer);
   }
 }
 
 //*************************************************
-void proc_read( void )
+static void proc_read(void)
 {
-  int16_t *pvar, val;
+  static const uint8_t st_list[] = { ST_DATA, 0 };
+  nb_int_t *pvar, val;
   uint8_t ch, *ptr, *ptrsave;
 
   pvar = getParameterPointer();
-//  if( pvar == NULL )  return;
-  if( checkDelimiter() ) return;
+//if (pvar == NULL)  return;
+  if (checkDelimiter()) return;
 
   ptrsave = executionPointer;
-  executionPointer = ( dataReadPointer == 0 ) ? (uint8_t*)PROGRAM_AREA_TOP : dataReadPointer;
+  executionPointer = (dataReadPointer == 0) ? (uint8_t*)PROGRAM_AREA_TOP + 1 : dataReadPointer;
 
   do{
-    if( *executionPointer != ',' ){
-      val = lineNumber;
-      ptr = findST( ST_DATA, ST_DATA, ST_DATA, &val );
-      if( ptr == NULL ){
-        errorCode = ERROR_PARA;
+    if (*executionPointer != ',') {
+      int16_t lnum = lineNumber;
+      ptr = findST(st_list, &lnum);
+      if (ptr == NULL) {
+        errorCode = ERROR_UXREAD;
         break;
       }
       executionPointer = ptr;
-    }else{
+    }
+    else{
       executionPointer++;
     }
     val = expr();
-    if( errorCode != ERROR_NONE ){
+    if (errorCode != ERROR_NONE) {
       break;
     }
     *pvar = val;
     ch = *executionPointer;
-    if( isDelimiter( ch ) || ch == ',' ){
+    if (isDelimiter(ch) || ch == ',') {
       break;
     }
     errorCode = ERROR_PARA;
-  }while( false );
+  } while (false);
   dataReadPointer = executionPointer;
   executionPointer = ptrsave;
 }
 
 //*************************************************
-void proc_restore( void )
+static void proc_restore(void)
 {
-  if( checkDelimiter() ) return;
+  if (checkDelimiter()) return;
   dataReadPointer = 0;
 }
 
 //*************************************************
-void proc_pwm( void )
+static void proc_pwm(void)
 {
-  int16_t val_1, val_2;
+  nb_int_t val_1, val_2;
 
-  val_1 = expr();
-  if( checkST( ',' ) ) return;
-  val_2 = expr();
-  if( checkDelimiter() ) return;
-
-  if( bios_setPwm( val_1, val_2 ) ) {
+  if (get_arg2(&val_1, &val_2) == ERROR_NONE) {
+    if (bios_setPwm(val_1, val_2)) {
       errorCode = ERROR_PARA;
+    }
   }
 }
 
 //*************************************************
-int16_t *getArrayReference( void )
+static nb_int_t inkey_func(nb_int_t val)
 {
-  int16_t index, *pvar;
+  if (val < 0) val = 0;
+  nb_int_t waitStart = bios_getSystemTick();
 
-  if( checkST( '[' ) ) return NULL;
+  while (1) {
+    int16_t ch = checkBreakKey();
+    if (ch != 0) return ch;
+    nb_int_t elapsed = bios_getSystemTick() - waitStart;
+    if (val && elapsed > val) return -1;
+  }
+}
+
+//*************************************************
+static nb_int_t *getArrayReference(void)
+{
+  int16_t index;
+  nb_int_t *pvar;
+
+  if (checkST('[')) return NULL;
   index = expr();
-  if( errorCode != ERROR_NONE ){ return NULL; }
-  if( index < 0 || index >= ARRAY_INDEX_NUM ){
+  if (errorCode != ERROR_NONE) return NULL;
+  if (index < 0 || index >= ARRAY_INDEX_NUM) {
     errorCode = ERROR_ARRAY;
     return NULL;
   }
   pvar = &arrayValiables[index];
-  if( checkST( ']' ) ) return NULL;
+  if (checkST(']')) return NULL;
   return pvar;
 }
 
 //*************************************************
-int16_t calcValueFunc( void )
+static nb_int_t calcValueFunc(void)
 {
-  int16_t val;
+  nb_int_t val;
 
-  if( checkST( '(' ) ) return -1;
+  if (checkST('(')) return -1;
   val = expr();
-  if( checkST( ')' ) ) return -1;
+  if (checkST(')')) return -1;
   return val;
 }
 
 //*************************************************
-int16_t calcValue( void )
+static nb_int_t calcValue(void)
 {
   uint8_t ch;
-  int16_t *pvar, val;
+  nb_int_t *pvar, val;
 
-  if( ++exprDepth > EXPR_DEPTH_MAX ) {
+  if (++exprDepth > EXPR_DEPTH_MAX) {
     errorCode = ERROR_TOODEEP;
     return -1;
   }
 
+  uint8_t* p = get_dec_val(executionPointer, &val);
+  if (p != NULL) {
+    executionPointer = p;
+    return val;
+  }
   ch = *executionPointer++;
-  if( isupper( ch ) ){
+  if (isupper(ch)) {
     ch -= 'A';
     return globalVariables[ch];
   }
-  if( ch == ST_ARRAY ) {
+  if (ch == ST_ARRAY) {
     pvar = getArrayReference();
-    if( pvar == NULL ) return -1;
+    if (pvar == NULL) return -1;
     return *pvar;
   }
-  switch( ch ) {
-  case VAL_ZERO :
-    return 0;
-  case ST_DECVAL :
-  case ST_HEXVAL :
-    val = *((int16_t *)executionPointer);
-    executionPointer += 2;
-    return val;
+
+  switch(ch) {
   case '(':
     val = expr();
-    if( checkST( ')' ) ) break;
+    if (checkST(')')) break;
     return val;
   case '-':
     return -calcValue();
@@ -1778,22 +2175,22 @@ int16_t calcValue( void )
     return ~calcValue();
   case FUNC_RND :
     val = calcValueFunc();
-    if( errorCode == ERROR_NONE ){
-      return bios_rand( val );
+    if (errorCode == ERROR_NONE) {
+      return bios_rand(val);
     }
     break;
   case FUNC_ABS :
     val = calcValueFunc();
-    if( errorCode == ERROR_NONE ){
-      if( val < 0 ) val = -val;
+    if (errorCode == ERROR_NONE) {
+      if (val < 0) val = -val;
       return val;
     }
     break;
   case FUNC_INP :
     val = calcValueFunc();
-    if( errorCode == ERROR_NONE ){
-      val = bios_readGpio( val );
-      if( val < 0 ){
+    if (errorCode == ERROR_NONE) {
+      val = bios_readGpio(val);
+      if (val < 0) {
         errorCode = ERROR_PARA;
       }
       return val;
@@ -1801,18 +2198,23 @@ int16_t calcValue( void )
     break;
   case FUNC_ADC :
     val = calcValueFunc();
-    if( errorCode == ERROR_NONE ){
-      val = bios_readAdc( val );
-      if( val < 0 ){
+    if (errorCode == ERROR_NONE) {
+      val = bios_readAdc(val);
+      if (val < 0) {
         errorCode = ERROR_PARA;
       }
       return val;
     }
     break;
-  case VAL_TICK :
+  case FUNC_INKEY :
+    val = calcValueFunc();
+    if (errorCode == ERROR_NONE) {
+      val = inkey_func(val);
+      return val;
+    }
+    break;
+  case SVAR_TICK :
     return bios_getSystemTick();
-  case VAL_INKEY :
-    return inputChar();
   default :
     errorCode = ERROR_SYNTAX;
   }
@@ -1820,28 +2222,28 @@ int16_t calcValue( void )
 }
 
 //*************************************************
-int16_t expr4th( void )
+static nb_int_t expr4th(void)
 {
-  int16_t acc, val;
+  nb_int_t acc, val;
   uint8_t ch;
 
   acc = calcValue();
-  if( errorCode != ERROR_NONE ){ return -1; }
-  while( true ) {
+  if (errorCode != ERROR_NONE) { return -1; }
+  while(true) {
     ch = *executionPointer++;
-    switch( ch ) {
+    switch(ch) {
     case '*':
       acc = acc * calcValue();
       break;
     case '/':
       val = calcValue();
-      if( checkDivZero( val ) ) {
+      if (!checkDivZero(val)) {
         acc = acc / val;
       }
       break;
     case '%':
       val = calcValue();
-      if( checkDivZero( val ) ) {
+      if (!checkDivZero(val)) {
         acc = acc % val;
       }
       break;
@@ -1849,21 +2251,21 @@ int16_t expr4th( void )
       executionPointer--;
       return acc;
     }
-    if( errorCode != ERROR_NONE ){ return -1; }
+    if (errorCode != ERROR_NONE) { return -1; }
   }
 }
 
 //*************************************************
-int16_t expr3nd( void )
+static nb_int_t expr3nd(void)
 {
-  int16_t acc;
+  nb_int_t acc;
   uint8_t ch;
 
   acc = expr4th();
-  if( errorCode != ERROR_NONE ){ return -1; }
-  while( true ) {
+  if (errorCode != ERROR_NONE) { return -1; }
+  while(true) {
     ch = *executionPointer++;
-    switch( ch ) {
+    switch(ch) {
     case '+':
       acc = acc + expr4th();
       break;
@@ -1874,30 +2276,33 @@ int16_t expr3nd( void )
       executionPointer--;
       return acc;
     }
-    if( errorCode != ERROR_NONE ){ return -1; }
+    if (errorCode != ERROR_NONE) { return -1; }
   }
 }
 
 //*************************************************
-int16_t expr2nd( void )
+static nb_int_t expr2nd(void)
 {
-  int16_t acc, tmp;
+  nb_int_t acc, tmp;
   uint8_t ch, ch2;
 
   acc = expr3nd();
-  if( errorCode != ERROR_NONE ){ return -1; }
-  while( true ) {
+  if (errorCode != ERROR_NONE) { return -1; }
+  while(true) {
     ch = *executionPointer++;
-    switch( ch ) {
+    switch(ch) {
     case '>':
       ch2 = *executionPointer++;
-      if( ch2 == '=' ) {
+      if (ch2 == '=') {
         tmp = expr3nd();
-        acc = (acc >= tmp);   // >= 
-      } else if( ch2 == ch )  {
+        acc = (acc >= tmp);   // >=
+      }
+      else
+      if (ch2 == ch)  {
         tmp = expr3nd();
         acc = (acc >> tmp);   // >>
-      } else {
+      }
+      else {
         executionPointer--;
         tmp = expr3nd();
         acc = (acc > tmp);    // >
@@ -1905,69 +2310,73 @@ int16_t expr2nd( void )
       break;
     case '<':
       ch2 = *executionPointer++;
-      if( ch2 == '=' ) {
+      if (ch2 == '=') {
         tmp = expr3nd();
         acc = (acc <= tmp);   // <=
-      } else if( ch2 == '>' ) {
+      }
+      else
+      if (ch2 == '>') {
         tmp = expr3nd();
         acc = (acc != tmp);   // <>
-      } else if( ch2 == ch )  {
+      }
+      else
+      if (ch2 == ch)  {
         tmp = expr3nd();
         acc = (acc << tmp);   // <<
-      } else {
+      }
+      else {
         executionPointer--;
         tmp = expr3nd();
         acc = (acc < tmp);    // <
       }
       break;
     case '=':
-      if ( *executionPointer == ch ) executionPointer++;
+      if (*executionPointer == ch) executionPointer++;
       tmp = expr3nd();
       acc = (acc == tmp);     // =, ==
       break;
-		case '!':
-			if( *executionPointer == '=' ) {
-				executionPointer++;
-      	tmp = expr3nd();
-      	acc = (acc != tmp);     // !=
-      	break;
-			}
-    default:
+    case '!':
+	  if (*executionPointer == '=') {
+	    executionPointer++;
+	    tmp = expr3nd();
+	    acc = (acc != tmp);     // !=
+	    break;
+	  }
+	  /* fall through */
+	default:
       executionPointer--;
       return acc;
     }
-    if( errorCode != ERROR_NONE ){ return -1; }
+    if (errorCode != ERROR_NONE) { return -1; }
   }
 }
 
 //*************************************************
-int16_t expr( void )
+static nb_int_t expr(void)
 {
-  int16_t acc;
+  nb_int_t acc;
   uint8_t ch;
 
   acc = expr2nd();
-  if( errorCode != ERROR_NONE ){ return -1; }
-  while( true ) {
+  if (errorCode != ERROR_NONE) { return -1; }
+  while(true) {
     ch = *executionPointer++;
-    switch( ch ) {
+    switch(ch) {
     case '&' :
-      if( *executionPointer == '&' ){
-        executionPointer++;
-        acc = acc && expr2nd();   // &&
-      }
-      else{
+      if (*executionPointer != ch) {
         acc = acc & expr2nd();    // &
+        break;
       }
+      executionPointer++;
+      acc = !!acc && !!expr2nd(); // &&
       break;
     case '|' :
-      if( *executionPointer == '|' ){
-        executionPointer++;
-        acc = acc || expr2nd();   // ||
-      }
-      else{
+      if (*executionPointer != ch) {
         acc = acc | expr2nd();    // |
+        break;
       }
+      executionPointer++;
+      acc = !!acc || !!expr2nd(); // ||
       break;
     case '^' :
       acc = acc ^ expr2nd();      // ^
@@ -1976,86 +2385,190 @@ int16_t expr( void )
       executionPointer--;
       return acc;
     }
-    if( errorCode != ERROR_NONE ){ return -1; }
+    if (errorCode != ERROR_NONE) { return -1; }
   }
 }
 
 //*************************************************
-char *conv2str( int16_t para, uint8_t ff, int8_t len )
+static char *int2str(nb_int_t para, uint8_t ff, int16_t len)
 {
   static char str[13];
   char *s, ch , flag, fx;
-  uint16_t val;
-  int16_t dot = -1;
+  nb_uint_t val;
+  int8_t dot ;
 
-  if ( len < 0 ) {
+#if PRINT_HEX_STYLE == 1
+  ff |= FORM_LOWER;
+#endif
+
+  if (len < 0) {
     ff |= FORM_ZERO;
     len = -len;
   }
 
-  if( len > 9 )
-  {
-    dot = len / 100;  
-    len = len % 100;
-    if ( len > 10 ) len = 10;
-  }
+  dot = len / 100;
+  len = len % 100;
+  if (len > 10) len = 10;
+  if (dot == 0) dot = -1;
 
-  fx = str[12] = 0;
-  if ((para < 0) && (ff & FORM_FHEX) != FORM_HEX ) {
+  fx = str[12] = '\0';
+  if ((para < 0) && (ff & FORM_FHEX) != FORM_HEX) {
     fx = flag = '-';
-    val = (uint16_t)(-para);
-  } else {
+    val = (nb_uint_t) -para;
+  }
+  else {
     flag = ' ';
-    if ( ff & FORM_PLUS ) fx = flag = '+';
-    val = (uint16_t)para;
+    if (ff & FORM_PLUS) fx = flag = '+';
+    val = para;
   }
   s = &str[10];
-  while ( 1 )
+  while (1)
   {
-    if ( ff & FORM_HEX ) {
+    if (ff & FORM_HEX) {
       ch = (val & 0x0f) + '0';
-      if ( ch > '9' ) {
+      if (ch > '9') {
         ch += 0x07 + (ff & FORM_LOWER);
       }
       val >>= 4;
-    } else {
-      ch = ( val % 10 ) + '0';
+    }
+    else {
+      ch = (val % 10) + '0';
       val /= 10;
     }
     *s-- = ch;
-    if ( dot >= 0 && (--dot == 0 ) ) *s-- = '.';
-    if ( len > 0 && (--len == 0) ) break;
-    if ( dot < 0 && val == 0 ) break;
+    if (dot >= 0 && (--dot == 0)) *s-- = '.';
+    if (len > 0 && (--len == 0)) break;
+    if (dot < 0 && val == 0) break;
   }
 
-  if ( ff & FORM_FLAG ) {
-    while ( len > 0 ) {
+  if (ff & FORM_FLAG) {
+    while (len > 0) {
       len--;
-      *s-- = 0x20 + (ff & FORM_ZERO);
+      *s-- = ASCII_SP + (ff & FORM_ZERO);
     }
     *s = flag;
-    return ( s );
+    return (s);
   }
 
-  if ( ff & FORM_ZERO ) {
-    if ( len == 0 && fx ) {
+  if (ff & FORM_ZERO) {
+    if (len == 0 && fx) {
       *s = flag;
-      return ( s );
+      return (s);
     }
-    while ( len > 0 ) {
+    while (len > 0) {
       len--;
-      *s-- = ( len == 0 && fx ) ? flag : '0';
+      *s-- = (len == 0 && fx) ? flag : '0';
     }
-  } else {
-    if ( fx ) {
+  }
+  else {
+    if (fx) {
       *s-- = flag;
-      if ( len > 0 )
+      if (len > 0)
         len--;
     }
-    while ( len > 0 ) {
+    while (len > 0) {
       len--;
       *s-- = ' ';
     }
   }
   return (s + 1);
+}
+
+//*************************************************
+static uint8_t* get_dec_val(uint8_t* ptr, nb_int_t* val)
+{
+  if (ptr[0] >= '0' && ptr[0] <= '9') {
+    *val = ptr[0] - '0';
+    return ptr + 1;
+  }
+
+  if ((*ptr & VAL_ST_MASK) != ST_VAL) {
+    return NULL;
+  }
+
+  uint8_t size = *ptr & VAL_SIZE_MASK;
+
+  if (size == VAL_SIZE_8) {
+    *val = (int8_t)ptr[1];
+    return ptr + 2;
+  }
+
+#if NANOBASIC_INT32_EN == 0
+  *val =
+    ((nb_int_t)(int8_t)ptr[2] << 8) |
+    ((nb_int_t)ptr[1]);
+  return ptr + 3;
+#else
+  if (size == VAL_SIZE_16) {
+    *val =
+      ((nb_int_t)(int8_t)ptr[2] << 8) |
+      ((nb_int_t)ptr[1]);
+    return ptr + 3;
+  }
+
+  if (size == VAL_SIZE_24) {
+    *val =
+      ((nb_int_t)(int8_t)ptr[3] << 16) |
+      ((nb_int_t)ptr[2] << 8) |
+      ((nb_int_t)ptr[1]);
+    return ptr + 4;
+  }
+  *val =
+    ((nb_int_t)(int8_t)ptr[4] << 24) |
+    ((nb_int_t)ptr[3] << 16) |
+    ((nb_int_t)ptr[2] << 8) |
+    ((nb_int_t)ptr[1]);
+  return ptr + 5;
+#endif
+}
+
+//*************************************************
+static uint8_t* set_dec_val(uint8_t* ptr, nb_int_t val)
+{
+  if (ptr[0] == ST_VAL_DEC) {
+    if (val >= 0 && val <= 9) {
+      ptr[0] = val + '0';
+      return ptr + 1;
+    }
+  }
+
+  nb_uint_t u = (nb_uint_t)val;
+
+  ptr[1] = (uint8_t)u;
+  if (val >= INT8_MIN && val <= INT8_MAX) {
+    ptr[0] |= VAL_SIZE_8;
+    return ptr + 2;
+  }
+
+  ptr[2] = (uint8_t)(u >> 8);
+#if NANOBASIC_INT32_EN == 0
+  ptr[0] |= VAL_SIZE_16;
+  return ptr + 3;
+#else
+  if (val >= INT16_MIN && val <= INT16_MAX) {
+    ptr[0] |= VAL_SIZE_16;
+    return ptr + 3;
+  }
+
+  ptr[3] = (uint8_t)(u >> 16);
+  if (val >= -8388608 && val <= 8388607) {
+    ptr[0] |= VAL_SIZE_24;
+    return ptr + 4;
+  }
+
+  ptr[4] = (uint8_t)(u >> 24);
+  ptr[0] |= VAL_SIZE_32;
+  return ptr + 5;
+#endif
+}
+
+//*************************************************
+static uint8_t *get_next_ptr(uint8_t* ptr)
+{
+  uint8_t ch = *ptr++;
+
+  if ((ch & VAL_ST_MASK) == ST_VAL) {
+    ptr += GET_VAL_SIZE(ch);
+  }
+  return ptr;
 }
